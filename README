@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+####
+#### Hello! I am building a Go playground mostly using Go with few external tools.
+#### Both the front and back end are written in Go and the user code will be run in the client browser.
+####
+
+set -eux
+
+# Playground
+
+## Setup
+function playground_init() {
+    go mod download
+    cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" cmd/webapp/assets
+}
+
+## Build
+function playground_build_webapp() {
+  cd cmd/server || exit 1
+
+    ### Build Webapp (written in Go using WASM)
+    rm -rf webapp
+    cp -rf ../webapp .
+    GOOS=js GOARCH=wasm go build -o webapp/assets/main.wasm ../webapp/
+
+ cd - || exit 1
+}
+
+## Run
+function playground_run() {
+  playground_build_webapp
+  go run ./cmd/server
+}
+
+## Any of the functions in this file can be invoked like:
+### ./README playground_run
+if [ $# -ne 0 ]; then
+    "$1"
+fi

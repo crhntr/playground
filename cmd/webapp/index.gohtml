@@ -1,0 +1,21 @@
+<!doctype html>
+<html class="no-js" lang="us-en">
+<head>
+    <meta charset="utf-8">
+    <title>Playground</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module">
+        import '/assets/wasm_exec.js'
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch("/assets/main.wasm"), go.importObject).then((result) => {
+            go.run(result.instance);
+        });
+    </script>
+</head>
+
+<body>
+    <p>Hello world!</p>
+</body>
+</html>
