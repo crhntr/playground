@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"embed"
-	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
@@ -101,7 +100,6 @@ func handleEnv() http.HandlerFunc {
 	}
 
 	env := mergeEnv(os.Environ(), goEnvOverride()...)
-	fmt.Println(env)
 
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx, cancel := context.WithTimeout(req.Context(), time.Second*2)

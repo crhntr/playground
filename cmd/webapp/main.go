@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 
 	"github.com/crhntr/window"
 )
@@ -16,8 +17,20 @@ func main() {
 		fmt.Println("failed to load template", err)
 		return
 	}
-	fetchGoVersion()
-	fetchGoEnv()
+
+	doAll(fetchGoVersion, fetchGoEnv)
+}
+
+func doAll(fns ...func()) {
+	wg := sync.WaitGroup{}
+	wg.Add(len(fns))
+	for _, fn := range fns {
+		go func(f func()) {
+			defer wg.Done()
+			f()
+		}(fn)
+	}
+	wg.Wait()
 }
 
 func fetchGoVersion() {
