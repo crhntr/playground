@@ -21,6 +21,20 @@ func main() {
 	doAll(fetchGoVersion, fetchGoEnv)
 }
 
+func fetchGoVersion() {
+	replaceTextWithResponseBody(
+		"/go/version",
+		"details#go-version pre",
+	)
+}
+
+func fetchGoEnv() {
+	replaceTextWithResponseBody(
+		"/go/env",
+		"details#go-env pre",
+	)
+}
+
 func doAll(fns ...func()) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(fns))
@@ -33,10 +47,10 @@ func doAll(fns ...func()) {
 	wg.Wait()
 }
 
-func fetchGoVersion() {
-	res, err := http.Get("/go/version")
+func replaceTextWithResponseBody(urlPath, elementQuery string) {
+	res, err := http.Get(urlPath)
 	if err != nil {
-		fmt.Println("failed to fetch version", err)
+		fmt.Printf("failed to fetch %s: %s", urlPath, err)
 		return
 	}
 	defer func() {
@@ -44,25 +58,8 @@ func fetchGoVersion() {
 	}()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println("failed to read version", err)
+		fmt.Println("failed to read response", err)
 		return
 	}
-	window.Document.QuerySelector("details#go-version pre").SetInnerText(string(body))
-}
-
-func fetchGoEnv() {
-	res, err := http.Get("/go/env")
-	if err != nil {
-		fmt.Println("failed to fetch version", err)
-		return
-	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println("failed to read version", err)
-		return
-	}
-	window.Document.QuerySelector("details#go-env pre").SetInnerText(string(body))
+	window.Document.QuerySelector(elementQuery).SetInnerText(string(body))
 }
