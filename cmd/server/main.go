@@ -40,7 +40,6 @@ func init() {
 func handlePage(res http.ResponseWriter, req *http.Request) {
 	page, ok := pages[req.URL.Path]
 	if !ok {
-		log.Println("page not found")
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
