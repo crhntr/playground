@@ -12,14 +12,24 @@
         WebAssembly.instantiateStreaming(fetch("/assets/main.wasm"), go.importObject).then((result) => {
             go.run(result.instance);
         });
+        go.exit
     </script>
 </head>
 
 <body>
     <label for="code"></label>
-    <textarea id="code"></textarea>
-    <button>Run</button>
-    <div id="logs"></div>
+    <textarea id="code">package main
+
+func main() { println("BLA") }
+    </textarea>
+    <button id="run">Run</button>
+    <div id="logs">
+        <pre id="stdout"></pre>
+        <pre id="stderr"></pre>
+    </div>
+
+    <ul id="errors">
+    </ul>
 
     <details id="go-version">
         <summary>go version</summary>
