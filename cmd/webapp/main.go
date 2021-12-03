@@ -3,7 +3,9 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -12,16 +14,16 @@ import (
 	"strings"
 	"sync"
 	"syscall/js"
+	"time"
 
 	"github.com/crhntr/window"
 )
 
+//go:embed index.gohtml
+var indexHTML string
+
 func main() {
-	_, err := window.LoadTemplates(nil, "template")
-	if err != nil {
-		fmt.Println("failed to load template", err)
-		return
-	}
+	window.SetTemplates(template.Must(template.New("").Parse(indexHTML)))
 
 	doAll(fetchGoVersion, fetchGoEnv)
 
@@ -109,12 +111,14 @@ func runWASM(buf []byte) {
 	}
 	frame := runBox.QuerySelector("iframe.run")
 	var (
-		closeLoadHandler  = func() {}
-		closeFrameHandler = func() {}
+		closeLoadHandler    = func() {}
+		closeFrameHandler   = func() {}
+		closeMessageHandler = func() {}
 	)
 	closeHandler := func() {
 		closeLoadHandler()
 		closeFrameHandler()
+		closeMessageHandler()
 	}
 	closeLoadHandler = frame.AddEventListenerFunc("load", func(event window.Event) {
 		defer closeLoadHandler()
@@ -124,6 +128,29 @@ func runWASM(buf []byte) {
 		_ = js.CopyBytesToJS(array, buf)
 		message.Set("binary", array)
 		frame.Get("contentWindow").Call("postMessage", message, window.Document.Get("location").Get("origin"))
+	})
+	closeMessageHandler = window.AddEventListenerFunc("message", func(event window.Event) {
+		defer closeMessageHandler()
+
+		d := event.Get("data")
+		messageName := d.Get("name").String()
+
+		switch messageName {
+		case "exit":
+			processEnd := struct {
+				ExitCode int
+				Duration time.Duration
+			}{
+				ExitCode: d.Get("exitCode").Int(),
+				Duration: time.Duration(d.Get("duration").Int()) * time.Millisecond,
+			}
+			el, err := window.Document.NewElementFromTemplate("exit-status", processEnd)
+			if err != nil {
+				panic(err)
+				return
+			}
+			runBox.Append(el)
+		}
 	})
 	closeFrameHandler = runBox.QuerySelector("button.close").AddEventListenerFunc("click", func(event window.Event) {
 		defer closeHandler()

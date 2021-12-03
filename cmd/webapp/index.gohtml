@@ -5,12 +5,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <template id="run">
-        <div class="run">
-            <button class="close">X</button>
-            <iframe class="run" src="/run" title="Run"></iframe>
-        </div>
-    </template>
     <script type="module">
         import '/assets/wasm_exec.js'
         const go = new Go();
@@ -33,12 +27,16 @@
             box-sizing: border-box;
             resize: vertical;
             min-height: 10rem;
+
+            font-family: monospace;
         }
-        iframe.run {
+        .run {
+            padding: 1rem;
+        }
+        .run iframe.run {
             border: .05rem solid dimgrey;
             box-shadow: none;
             padding: 0;
-            margin: 1rem;
             width: calc(100vw - 2 * 1rem - 2 * .1rem);
             display: block;
             box-sizing: border-box;
@@ -47,23 +45,37 @@
 </head>
 
 <body>
+    <div hidden>
+        {{define "run"}}
+        <div class="run">
+            <button class="close">X</button>
+            <iframe class="run" src="/run" title="Run"></iframe>
+        </div>
+        {{end}}
+
+        {{define "exit-status"}}
+        <div class="exit-status">
+            <pre>exit code {{.ExitCode}} after {{.Duration.String}}</pre>
+        </div>
+        {{end}}
+    </div>
+
     <div id="editor">
         <label for="code"></label>
         <textarea id="code" spellcheck="false" autofocus autocomplete="off">package main
 
 import (
-            "fmt"
-            "syscall/js"
-            "time"
+	"fmt"
+	"syscall/js"
+	"time"
 )
 
 func main() {
-        for i := 0; i < 100; i++ {
-            js.Global().Get("document").Get("body").Set("innerText", fmt.Sprint(i))
-            time.Sleep(time.Second/2)
-        }
-}
-</textarea>
+	for i := 0; i < 8; i++ {
+		js.Global().Get("document").Get("body").Set("innerText", fmt.Sprint(i))
+		time.Sleep(time.Second / 2)
+	}
+}</textarea>
         <button id="run">Run</button>
         <div id="logs">
             <pre id="stdout"></pre>

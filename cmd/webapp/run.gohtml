@@ -8,11 +8,24 @@
     <script type="module">
         import '/assets/wasm_exec.js'
 
-        function run(binary) {
+        async function run(binary) {
             const go = new Go();
-            WebAssembly.instantiate(binary, go.importObject).then((result) => {
-                go.run(result.instance);
-            });
+
+
+            const exit = go.exit
+            let exitCode;
+            go.exit = function(code) {
+                exitCode = code
+                exit(code)
+            }
+
+            const process = await WebAssembly.instantiate(binary, go.importObject)
+
+            const now = Date.now()
+            await go.run(process.instance)
+
+            const duration = Date.now() - now
+            window.parent.postMessage({name: "exit", exitCode, duration})
         }
 
         function main() {
