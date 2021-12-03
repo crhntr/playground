@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <script type="module">
-      import '/assets/wasm_exec.js'
+  <script>
+      {{.WASMExec}}
 
       async function run(binary) {
           const go = new Go();
@@ -25,7 +25,7 @@
           await go.run(process.instance)
 
           const duration = Date.now() - now
-          window.parent.postMessage({name: "exit", exitCode, duration})
+          window.parent.postMessage({name: "exit", exitCode, duration}, {{.WebappLocation}})
       }
 
       function main() {
@@ -34,7 +34,7 @@
           }
 
           window.addEventListener("message", event => {
-              if (event.origin !== window.location.origin) {
+              if (event.origin !== {{.WebappLocation}}) {
                   return
               }
 

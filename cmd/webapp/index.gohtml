@@ -52,27 +52,33 @@
 
 <body>
 <div hidden>
-  {{define "run"}}
-    <div class="run">
-      <button class="close">X</button>
-      <iframe class="run" src="/run" title="Run"></iframe>
-    </div>
-  {{end}}
+    {{define "run"}}
+      <div class="run">
+        <button class="close">X</button>
+        <iframe
+                class="run"
+                srcdoc="{{.RunHTML}}"
+                title="Run"
+                sandbox="allow-scripts"
+        ></iframe>
+      </div>
+    {{end}}
 
-  {{define "exit-status"}}
-    <div class="exit-status">
-      <pre>exit code {{.ExitCode}} after {{.Duration.String}}</pre>
-    </div>
-  {{end}}
+    {{define "exit-status"}}
+      <div class="exit-status">
+        <pre>exit code {{.ExitCode}} after {{.Duration.String}}</pre>
+      </div>
+    {{end}}
 
-  {{define "example-selector"}}
-    <label>
-      Select Example
-      <select>
-        {{range .}}<option value="{{.}}">{{.}}</option>{{end}}
-      </select>
-    </label>
-  {{end}}
+    {{define "example-selector"}}
+      <label>
+        Select Example
+        <select>
+            {{range .}}
+            <option value="{{.}}">{{.}}</option>{{end}}
+        </select>
+      </label>
+    {{end}}
 </div>
 
 <div id="editor">

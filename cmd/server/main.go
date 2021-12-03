@@ -40,8 +40,7 @@ var (
 	assetsFS fs.FS
 
 	pages = map[string]string{
-		"/":    "webapp/index.gohtml",
-		"/run": "webapp/run.gohtml",
+		"/": "webapp/index.gohtml",
 	}
 )
 

@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"html/template"
@@ -22,11 +23,19 @@ import (
 	"github.com/crhntr/playground"
 )
 
-//go:embed index.gohtml
-var indexHTML string
+var (
+	//go:embed index.gohtml
+	indexHTML string
 
-//go:embed examples
-var examplesFS embed.FS
+	//go:embed run.gohtml
+	runHTML string
+
+	//go:embed assets/wasm_exec.js
+	wasmExec string
+
+	//go:embed examples
+	examplesFS embed.FS
+)
 
 func main() {
 	window.SetTemplates(template.Must(template.New("").Parse(indexHTML)))
@@ -121,7 +130,20 @@ func handleRun() {
 }
 
 func runWASM(buf []byte) {
-	runBox, err := window.Document.NewElementFromTemplate("run", struct{}{})
+	var runHTMLBuf bytes.Buffer
+	_ = template.Must(template.New("").Parse(runHTML)).Execute(&runHTMLBuf, struct {
+		WebappLocation string
+		WASMExec       template.JS
+	}{
+		WebappLocation: window.Location.Origin(),
+		WASMExec:       template.JS(wasmExec),
+	})
+
+	runBox, err := window.Document.NewElementFromTemplate("run", struct {
+		RunHTML string
+	}{
+		RunHTML: runHTMLBuf.String(),
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -143,7 +165,7 @@ func runWASM(buf []byte) {
 		array := window.Get("Uint8ClampedArray").New(len(buf))
 		_ = js.CopyBytesToJS(array, buf)
 		message.Set("binary", array)
-		frame.Get("contentWindow").Call("postMessage", message, window.Document.Get("location").Get("origin"))
+		frame.Get("contentWindow").Call("postMessage", message, "*")
 	})
 	closeMessageHandler = window.AddEventListenerFunc("message", func(event window.Event) {
 		defer closeMessageHandler()
