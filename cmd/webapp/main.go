@@ -3,14 +3,16 @@
 package main
 
 import (
-	_ "embed"
+	"embed"
 	"fmt"
+	"github.com/crhntr/playground"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall/js"
@@ -22,8 +24,21 @@ import (
 //go:embed index.gohtml
 var indexHTML string
 
+//go:embed examples
+var examplesFS embed.FS
+
 func main() {
 	window.SetTemplates(template.Must(template.New("").Parse(indexHTML)))
+
+	exampleNames := playground.ListFileNames(examplesFS, "examples")
+	exampleSelector, _ := window.Document.NewElementFromTemplate(
+		"example-selector",
+		exampleNames,
+	)
+	window.Document.QuerySelector("#example-selector").ReplaceWith(exampleSelector)
+	exampleChangeHandler := exampleSelector.AddEventListenerFunc("change", updateExampleCodeHandler)
+	defer exampleChangeHandler()
+	updateExampleCode(exampleNames[0])
 
 	doAll(fetchGoVersion, fetchGoEnv)
 
@@ -203,4 +218,17 @@ func replaceTextWithResponseBody(urlPath, elementQuery string) {
 		return
 	}
 	window.Document.QuerySelector(elementQuery).SetInnerText(string(body))
+}
+
+func updateExampleCodeHandler(event window.Event) {
+	updateExampleCode(event.Target().Get("value").String())
+}
+
+func updateExampleCode(name string) {
+	f, _ := examplesFS.Open(filepath.Join("examples", name, "main.go"))
+	defer func() {
+		_ = f.Close()
+	}()
+	buf, _ := io.ReadAll(f)
+	window.Document.QuerySelector("textarea#code").Set("value", string(buf))
 }
