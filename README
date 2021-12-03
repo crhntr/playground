@@ -10,19 +10,20 @@
 ## Setup Dependencies
 function init() {
     go mod download
-    mkdir -p cmd/webapp/assets
-    cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" cmd/webapp/assets/
+    local assetsDir="cmd/webapp/assets/"
+    mkdir -p "${assetsDir}"
+    cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" "${assetsDir}"
 }
 
 ## Build Webapp Assets
 function build_webapp() {
-  cd cmd/server || exit 1
-    ### Remove existing assets directory and copy over webapp code
-    rm -rf webapp && cp -rf ../webapp .
+  local webappPackage="cmd/webapp"
+  local serverPackage="cmd/server"
+  rm -rf "${serverPackage}/webapp"
+  cp -rf "${webappPackage}" "${serverPackage}"
 
-    ### Build Webapp (written in Go using WASM)
-    GOOS=js GOARCH=wasm go build -o webapp/assets/main.wasm ../webapp/
- cd - || exit 1
+  ### Build Webapp (written in Go using WASM)
+  GOOS=js GOARCH=wasm go build -o "${serverPackage}/webapp/assets/main.wasm" "./${webappPackage}/"
 }
 
 ## Run
