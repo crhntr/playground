@@ -5,7 +5,6 @@ package main
 import (
 	"embed"
 	"fmt"
-	"github.com/crhntr/playground"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -19,6 +18,8 @@ import (
 	"time"
 
 	"github.com/crhntr/window"
+
+	"github.com/crhntr/playground"
 )
 
 //go:embed index.gohtml
