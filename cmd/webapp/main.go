@@ -40,7 +40,7 @@ func main() {
 	defer exampleChangeHandler()
 	updateExampleCode(exampleNames[0])
 
-	doAll(fetchGoVersion, fetchGoEnv)
+	doAll(fetchGoVersion)
 
 	window.Document.QuerySelector("button#run").AddEventListenerFunc("click", func(event window.Event) {
 		go handleRun()
@@ -181,13 +181,6 @@ func fetchGoVersion() {
 	replaceTextWithResponseBody(
 		"/go/version",
 		"details#go-version pre",
-	)
-}
-
-func fetchGoEnv() {
-	replaceTextWithResponseBody(
-		"/go/env",
-		"details#go-env pre",
 	)
 }
 

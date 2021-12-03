@@ -23,7 +23,6 @@ func main() {
 	mux.Handle("/", http.HandlerFunc(handlePage))
 
 	mux.Handle("/go/version", handleVersion())
-	mux.Handle("/go/env", handleEnv())
 	mux.Handle("/go/run", handleRun())
 
 	err := http.ListenAndServe(":8080", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
@@ -200,33 +199,6 @@ func handleVersion() http.HandlerFunc {
 		defer cancel()
 
 		cmd := exec.CommandContext(ctx, goExecPath, "version")
-		var buf bytes.Buffer
-		cmd.Stdout = &buf
-		cmd.Stderr = &buf
-		cmd.Env = env
-		err := cmd.Run()
-		if err != nil {
-			http.Error(res, buf.String(), http.StatusInternalServerError)
-			return
-		}
-		res.WriteHeader(http.StatusOK)
-		_, _ = io.Copy(res, &buf)
-	}
-}
-
-func handleEnv() http.HandlerFunc {
-	goExecPath, lookUpErr := exec.LookPath("go")
-	if lookUpErr != nil {
-		panic(lookUpErr)
-	}
-
-	env := mergeEnv(os.Environ(), goEnvOverride()...)
-
-	return func(res http.ResponseWriter, req *http.Request) {
-		ctx, cancel := context.WithTimeout(req.Context(), time.Second*2)
-		defer cancel()
-
-		cmd := exec.CommandContext(ctx, goExecPath, "env")
 		var buf bytes.Buffer
 		cmd.Stdout = &buf
 		cmd.Stderr = &buf
