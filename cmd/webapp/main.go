@@ -192,7 +192,6 @@ func runWASM(buf []byte) {
 	})
 	closeFrameHandler = runBox.QuerySelector("button.close").AddEventListenerFunc("click", func(event window.Event) {
 		defer closeHandler()
-		window.Console.Log("HELLO")
 		frame.Get("contentWindow").Call("close")
 		runBox.Closest("div.run").Remove()
 	})
