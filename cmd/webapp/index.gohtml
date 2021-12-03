@@ -1,43 +1,86 @@
 <!doctype html>
 <html class="no-js" lang="us-en">
 <head>
-    <meta charset="utf-8">
     <title>Playground</title>
-    <meta name="description" content="">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <template id="run">
+        <div class="run">
+            <button class="close">X</button>
+            <iframe class="run" src="/run" title="Run"></iframe>
+        </div>
+    </template>
     <script type="module">
         import '/assets/wasm_exec.js'
         const go = new Go();
         WebAssembly.instantiateStreaming(fetch("/assets/main.wasm"), go.importObject).then((result) => {
             go.run(result.instance);
         });
-        go.exit
     </script>
+    <style>
+        body, html {
+            margin: 0; padding: 0;
+        }
+        #editor {
+            padding: 1rem;
+        }
+        #editor textarea#code {
+            border: .05rem solid dimgrey;
+            box-shadow: none;
+            width: calc(100% - 2 * .05rem);
+            display: block;
+            box-sizing: border-box;
+            resize: vertical;
+            min-height: 10rem;
+        }
+        iframe.run {
+            border: .05rem solid dimgrey;
+            box-shadow: none;
+            padding: 0;
+            margin: 1rem;
+            width: calc(100vw - 2 * 1rem - 2 * .1rem);
+            display: block;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 
 <body>
-    <label for="code"></label>
-    <textarea id="code">package main
+    <div id="editor">
+        <label for="code"></label>
+        <textarea id="code" spellcheck="false" autofocus autocomplete="off">package main
 
-func main() { println("BLA") }
-    </textarea>
-    <button id="run">Run</button>
-    <div id="logs">
-        <pre id="stdout"></pre>
-        <pre id="stderr"></pre>
+import (
+            "fmt"
+            "syscall/js"
+            "time"
+)
+
+func main() {
+        for i := 0; i < 100; i++ {
+            js.Global().Get("document").Get("body").Set("innerText", fmt.Sprint(i))
+            time.Sleep(time.Second/2)
+        }
+}
+</textarea>
+        <button id="run">Run</button>
+        <div id="logs">
+            <pre id="stdout"></pre>
+            <pre id="stderr"></pre>
+        </div>
+
+        <ul id="errors">
+        </ul>
+
+        <details id="go-version">
+            <summary>go version</summary>
+            <pre>loading...</pre>
+        </details>
+        <details id="go-env">
+            <summary>go env</summary>
+            <pre>loading...</pre>
+        </details>
     </div>
-
-    <ul id="errors">
-    </ul>
-
-    <details id="go-version">
-        <summary>go version</summary>
-        <pre>loading...</pre>
-    </details>
-    <details id="go-env">
-        <summary>go env</summary>
-        <pre>loading...</pre>
-    </details>
 </body>
 </html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="us-en">
+<head>
+    <title>Run</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module">
+        import '/assets/wasm_exec.js'
+
+        function run(binary) {
+            const go = new Go();
+            WebAssembly.instantiate(binary, go.importObject).then((result) => {
+                go.run(result.instance);
+            });
+        }
+
+        function main() {
+            if (!window.parent) {
+                return
+            }
+
+            window.addEventListener("message", event => {
+                if (event.origin !== window.location.origin) {
+                    return
+                }
+
+                if (event.data.name === "binary") {
+                    run(event.data['binary'])
+                }
+            }, false)
+        }
+        main()
+    </script>
+</head>
+
+<body>
+</body>
+</html>

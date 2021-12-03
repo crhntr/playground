@@ -26,7 +26,10 @@ func main() {
 	mux.Handle("/go/env", handleEnv())
 	mux.Handle("/go/run", handleRun())
 
-	err := http.ListenAndServe(":8080", mux)
+	err := http.ListenAndServe(":8080", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		log.Println(req.URL)
+		mux.ServeHTTP(res, req)
+	}))
 	if err != nil {
 		panic(err)
 	}
@@ -38,7 +41,8 @@ var (
 	assetsFS fs.FS
 
 	pages = map[string]string{
-		"/": "webapp/index.gohtml",
+		"/":    "webapp/index.gohtml",
+		"/run": "webapp/run.gohtml",
 	}
 )
 

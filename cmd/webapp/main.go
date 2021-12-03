@@ -26,13 +26,13 @@ func main() {
 	doAll(fetchGoVersion, fetchGoEnv)
 
 	window.Document.QuerySelector("button#run").AddEventListenerFunc("click", func(event window.Event) {
-		go run()
+		go handleRun()
 	})
 
 	select {}
 }
 
-func run() {
+func handleRun() {
 	code := window.Document.QuerySelector("textarea#code").Get("value").String()
 
 	req, err := http.NewRequest(http.MethodPost, "/go/run", strings.NewReader(code))
@@ -97,26 +97,42 @@ func run() {
 				fmt.Println("failed to read response output", err)
 				return
 			}
-			g := js.Global()
-			uint8Array := g.Get("Uint8Array").New(len(buf))
-			_ = js.CopyBytesToJS(uint8Array, buf)
-
-			done := make(chan struct{})
-			wasmExec := g.Get("Go").New()
-			success := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-				defer close(done)
-				result := args[0]
-				wasmExec.Call("run", result.Get("instance"))
-				return nil
-			})
-
-			g.Get("WebAssembly").Call(
-				"instantiate", uint8Array.Get("buffer"), wasmExec.Get("importObject"),
-			).Call("then", success)
-
-			<-done
+			runWASM(buf)
 		}
 	}
+}
+
+func runWASM(buf []byte) {
+	runBox, err := window.Document.NewElementFromTemplate("run", struct{}{})
+	if err != nil {
+		panic(err)
+	}
+	frame := runBox.QuerySelector("iframe.run")
+	var (
+		closeLoadHandler  = func() {}
+		closeFrameHandler = func() {}
+	)
+	closeHandler := func() {
+		closeLoadHandler()
+		closeFrameHandler()
+	}
+	closeLoadHandler = frame.AddEventListenerFunc("load", func(event window.Event) {
+		defer closeLoadHandler()
+		message := window.Get("Object").New()
+		message.Set("name", "binary")
+		array := window.Get("Uint8ClampedArray").New(len(buf))
+		_ = js.CopyBytesToJS(array, buf)
+		message.Set("binary", array)
+		frame.Get("contentWindow").Call("postMessage", message, window.Document.Get("location").Get("origin"))
+	})
+	closeFrameHandler = runBox.QuerySelector("button.close").AddEventListenerFunc("click", func(event window.Event) {
+		defer closeHandler()
+		window.Console.Log("HELLO")
+		frame.Get("contentWindow").Call("close")
+		runBox.Closest("div.run").Remove()
+	})
+
+	window.Document.Body().Append(runBox)
 }
 
 func fetchGoVersion() {
