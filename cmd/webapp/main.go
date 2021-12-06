@@ -56,6 +56,9 @@ func main() {
 		go handleRun()
 	})
 
+	window.Document.QuerySelector("#editor").RemoveAttribute("hidden")
+	defer window.Document.QuerySelector("#editor").SetAttribute("hidden", "")
+
 	select {}
 }
 
