@@ -18,6 +18,12 @@
               exitCode = code
               exit(code)
           }
+          // const writeSync = global.fs.writeSync
+          global.fs.writeSync = function (fd, buf) {
+              window.parent.postMessage({name: "writeSync", fd, buf}, {{.WebappLocation}})
+              // return writeSync(fd, buf)
+              return buf.length
+          }
 
           const process = await WebAssembly.instantiate(binary, go.importObject)
 

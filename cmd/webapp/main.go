@@ -168,13 +168,13 @@ func runWASM(buf []byte) {
 		frame.Get("contentWindow").Call("postMessage", message, "*")
 	})
 	closeMessageHandler = window.AddEventListenerFunc("message", func(event window.Event) {
-		defer closeMessageHandler()
-
 		d := event.Get("data")
 		messageName := d.Get("name").String()
 
 		switch messageName {
 		case "exit":
+			defer closeMessageHandler()
+
 			processEnd := struct {
 				ExitCode int
 				Duration time.Duration
@@ -188,6 +188,18 @@ func runWASM(buf []byte) {
 				return
 			}
 			runBox.Append(el)
+		case "writeSync":
+			writeSyncBuf := make([]byte, d.Get("buf").Length())
+			js.CopyBytesToGo(writeSyncBuf, d.Get("buf"))
+			writeSyncMessage := struct {
+				Buf string
+				FD  int
+			}{
+				Buf: string(writeSyncBuf),
+				FD:  d.Get("fd").Int(),
+			}
+			stdout := runBox.QuerySelector(".stdout")
+			stdout.Append(window.Document.CreateTextNode(writeSyncMessage.Buf))
 		}
 	})
 	closeFrameHandler = runBox.QuerySelector("button.close").AddEventListenerFunc("click", func(event window.Event) {
