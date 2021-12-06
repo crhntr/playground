@@ -12,11 +12,11 @@
           const go = new Go();
 
 
-          const exit = go.exit
+          // const exit = go.exit
           let exitCode;
           go.exit = function (code) {
               exitCode = code
-              exit(code)
+              // exit(code)
           }
           // const writeSync = global.fs.writeSync
           global.fs.writeSync = function (fd, buf) {
