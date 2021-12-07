@@ -24,6 +24,26 @@
       body, html {
           margin: 0;
           padding: 0;
+
+          font-family: sans-serif;
+      }
+
+      header {
+          margin-bottom: 2rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: HSLA(198, 48%, 41%, 1.00);
+          color: white;
+      }
+      header .page-name {
+          padding: .5rem;
+          font-size: 1.8rem;
+      }
+      header a {
+          padding: .5rem;
+          text-decoration: none;
+          color: white;
       }
 
       #editor {
@@ -37,7 +57,9 @@
           display: block;
           box-sizing: border-box;
           resize: vertical;
-          min-height: 10rem;
+          min-height: 20rem;
+          background: HSLA(60, 100%, 94%, 1.00);
+          padding: 1rem;
 
           font-family: monospace;
       }
@@ -53,6 +75,7 @@
           width: calc(100vw - 2 * 1rem - 2 * .1rem);
           display: block;
           box-sizing: border-box;
+          height: 80vh;
       }
   </style>
 </head>
@@ -88,6 +111,10 @@
       </label>
     {{end}}
 </div>
+<header>
+  <div class="page-name">Playground</div>
+  <a href="https://github.com/crhntr/playground">Source Code</a>
+</header>
 
 <div id="downloading" hidden>Downloading...</div>
 
