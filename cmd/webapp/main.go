@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -47,7 +48,7 @@ func main() {
 	window.Document.QuerySelector("#example-selector").ReplaceWith(exampleSelector)
 	exampleChangeHandler := exampleSelector.AddEventListenerFunc("change", updateExampleCodeHandler)
 	defer exampleChangeHandler()
-	updateExampleCode(exampleNames[0])
+	updateExampleCode(exampleNames[rand.Intn(len(exampleNames))])
 
 	window.Document.QuerySelector("button#run").AddEventListenerFunc("click", func(event window.Event) {
 		go handleRun()
