@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	"sync"
 	"syscall/js"
 	"time"
 
@@ -50,11 +49,11 @@ func main() {
 	defer exampleChangeHandler()
 	updateExampleCode(exampleNames[0])
 
-	doAll(fetchGoVersion)
-
 	window.Document.QuerySelector("button#run").AddEventListenerFunc("click", func(event window.Event) {
 		go handleRun()
 	})
+
+	fetchGoVersion()
 
 	window.Document.QuerySelector("#editor").RemoveAttribute("hidden")
 	defer window.Document.QuerySelector("#editor").SetAttribute("hidden", "")
@@ -219,18 +218,6 @@ func fetchGoVersion() {
 		"/go/version",
 		"details#go-version pre",
 	)
-}
-
-func doAll(fns ...func()) {
-	wg := sync.WaitGroup{}
-	wg.Add(len(fns))
-	for _, fn := range fns {
-		go func(f func()) {
-			defer wg.Done()
-			f()
-		}(fn)
-	}
-	wg.Wait()
 }
 
 func replaceTextWithResponseBody(urlPath, elementQuery string) {
