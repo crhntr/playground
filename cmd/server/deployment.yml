@@ -24,8 +24,6 @@ spec:
           env:
             - name: PORT
               value: "8080"
-          securityContext:
-            runAsNonRoot: true
 ---
 apiVersion: v1
 kind: Service
