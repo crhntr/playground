@@ -1,0 +1,7 @@
+builds:
+  - id: playground-server
+    main: ./cmd/server/
+    ldflags:
+      - -s -w
+baseImageOverrides:
+  github.com/crhntr/playground/cmd/server: golang:alpine

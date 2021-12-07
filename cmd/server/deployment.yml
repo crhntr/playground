@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playground-server
+  namespace: crhntr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: playground-server
+  template:
+    metadata:
+      labels:
+        app: playground-server
+    spec:
+      imagePullSecrets:
+        - name: registry-crhntr
+      containers:
+        - name: playground-server
+          image: ko://github.com/crhntr/playground/cmd/server
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+          securityContext:
+            runAsNonRoot: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: playground-server
+  namespace: crhntr
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: playground-server
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: playground-server
+  namespace: crhntr
+spec:
+  tls:
+    - hosts:
+        - playground.cazador.codes
+  rules:
+    - host: playground.cazador.codes
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: playground-server
+                port:
+                  number: 8080

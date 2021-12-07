@@ -25,7 +25,11 @@ func main() {
 	mux.Handle("/go/version", handleVersion())
 	mux.Handle("/go/run", handleRun())
 
-	err := http.ListenAndServe(":8080", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	err := http.ListenAndServe(":"+port, http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		log.Println(req.URL)
 		mux.ServeHTTP(res, req)
 	}))
@@ -143,7 +147,7 @@ func createMainFile(dir string, rc io.ReadCloser) error {
 	defer func() {
 		_ = f.Close()
 	}()
-	_, err = io.Copy(f, rc)
+	_, err = io.Copy(f, io.LimitReader(rc, 1<<15))
 	if err != nil {
 		return err
 	}

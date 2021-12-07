@@ -32,6 +32,11 @@ function run() {
   go run ./cmd/server
 }
 
+function deploy() {
+  build_webapp
+  ko apply --filename cmd/server/deployment.yml
+}
+
 ## Any of the functions in this file can be invoked like:
 ### ./README run
 if [ $# -ne 0 ]; then
