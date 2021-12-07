@@ -9,9 +9,16 @@
       import '/assets/wasm_exec.js'
 
       const go = new Go();
-      WebAssembly.instantiateStreaming(fetch("/assets/main.wasm"), go.importObject).then((result) => {
-          go.run(result.instance);
-      });
+      const el = window.document.querySelector('#downloading')
+      el.removeAttribute("hidden")
+      try {
+          const result = await WebAssembly.instantiateStreaming(fetch("/assets/main.wasm"), go.importObject)
+          el.remove()
+          await go.run(result.instance)
+      } catch (err) {
+          el.remove()
+          window.document.querySelector("#errors").innerHTML = `<li>${err}</li>`
+      }
   </script>
   <style>
       body, html {
@@ -81,6 +88,8 @@
       </label>
     {{end}}
 </div>
+
+<div id="downloading" hidden>Downloading...</div>
 
 <div id="editor" hidden>
   <div id="example-selector" hidden></div>

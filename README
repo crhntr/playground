@@ -22,7 +22,6 @@ function build_webapp() {
   rm -rf "${serverPackage}/webapp"
   cp -rf "${webappPackage}" "${serverPackage}"
 
-  ### Build Webapp (written in Go using WASM)
   GOOS=js GOARCH=wasm go build -o "${serverPackage}/webapp/assets/main.wasm" "./${webappPackage}/"
 }
 
