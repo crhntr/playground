@@ -182,6 +182,7 @@ func handlePage(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	res.Header().Set("cache-control", "no-cache")
 	res.Header().Set("content-type", "text/html")
 	res.WriteHeader(http.StatusOK)
 	if err := templates.Execute(res, struct{}{}); err != nil {
