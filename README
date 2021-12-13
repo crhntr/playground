@@ -2,10 +2,8 @@
 
 # Playground
 
-####
-#### Hello! I am building a Go playground mostly using Go with few external tools.
-#### Both the front and back end are written in Go and the user code will be run in the client browser.
-####
+## The functions in this file can be invoked like:
+### ./README run
 
 ## Setup Dependencies
 function init() {
@@ -36,8 +34,6 @@ function deploy() {
   ko apply --filename cmd/server/deployment.yml
 }
 
-## Any of the functions in this file can be invoked like:
-### ./README run
 if [ $# -ne 0 ]; then
     "$1"
 fi
