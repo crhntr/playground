@@ -25,7 +25,7 @@ func main() {
 	mux.Handle("/", http.HandlerFunc(handlePage))
 
 	mux.Handle("/go/version", handleVersion())
-	mux.Handle("/go/run", handleRun())
+	mux.Handle("/go/run", gziphandler.GzipHandler(handleRun()))
 
 	port := os.Getenv("PORT")
 	if port == "" {
