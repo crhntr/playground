@@ -15,15 +15,17 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/NYTimes/gziphandler"
 )
 
 func main() {
 	mux := http.NewServeMux()
-	mux.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(http.FS(assetsFS))))
+	mux.Handle("/assets/", http.StripPrefix("/assets", gziphandler.GzipHandler(http.FileServer(http.FS(assetsFS)))))
 	mux.Handle("/", http.HandlerFunc(handlePage))
 
 	mux.Handle("/go/version", handleVersion())
-	mux.Handle("/go/run", handleRun())
+	mux.Handle("/go/run", gziphandler.GzipHandler(handleRun()))
 
 	port := os.Getenv("PORT")
 	if port == "" {
