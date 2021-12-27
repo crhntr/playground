@@ -3,31 +3,29 @@
 package main
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall/js"
 	"time"
 
 	"github.com/crhntr/window"
+	"github.com/crhntr/window/browser"
+	"github.com/crhntr/window/dom"
 
 	"github.com/crhntr/playground"
 )
 
 var (
-	//go:embed index.gohtml
-	indexHTML string
-
-	//go:embed run.gohtml
-	runHTML string
+	//go:embed run_head.html
+	runHTMLHEAD string
 
 	//go:embed assets/wasm_exec.js
 	wasmExec string
@@ -37,34 +35,44 @@ var (
 )
 
 func main() {
-	window.SetTemplates(template.Must(template.New("").Parse(indexHTML)))
-
 	exampleNames := playground.ListFileNames(examplesFS, "examples")
-	exampleSelector, _ := window.Document.NewElementFromTemplate(
-		"example-selector",
-		exampleNames,
-	)
-	window.Document.QuerySelector("#example-selector").ReplaceWith(exampleSelector)
-	exampleChangeHandler := exampleSelector.AddEventListenerFunc("change", updateExampleCodeHandler)
-	defer exampleChangeHandler()
+	selectExample := window.Document.QuerySelector("select#select-example").(browser.Element)
+	for _, name := range exampleNames {
+		option := window.Document.CreateElement("option")
+		option.SetAttribute("value", name)
+		option.AppendChild(window.Document.CreateTextNode(name))
+		selectExample.Append(option)
+	}
 	updateExampleCode(exampleNames[0])
 
-	window.Document.QuerySelector("button#run").AddEventListenerFunc("click", func(event window.Event) {
+	exampleChangeHandler := browser.NewEventListenerFunc(updateExampleCodeHandler)
+	defer exampleChangeHandler.Release()
+	selectExample.AddEventListener("change", exampleChangeHandler)
+
+	runButton := window.Document.QuerySelector("button#run").(browser.Element)
+	runBtnClickHandler := browser.NewEventListenerFunc(func(event browser.Event) {
 		go handleRun()
 	})
+	defer runBtnClickHandler.Release()
+	runButton.AddEventListener("click", runBtnClickHandler)
 
-	fetchGoVersion()
+	replaceTextWithResponseBody(
+		"/go/version",
+		"details#go-version pre",
+	)
 
-	window.Document.QuerySelector("#editor").RemoveAttribute("hidden")
-	defer window.Document.QuerySelector("#editor").SetAttribute("hidden", "")
+	editorEl := window.Document.QuerySelector("#editor")
+	editorEl.RemoveAttribute("hidden")
+	defer editorEl.SetAttribute("hidden", "")
 
 	select {}
 }
 
 func handleRun() {
-	code := window.Document.QuerySelector("textarea#code").Get("value").String()
+	codeTextareaEl := window.Document.QuerySelector("textarea#code").(browser.Element)
+	codeTextarea := browser.Input(codeTextareaEl).Value()
 
-	req, err := http.NewRequest(http.MethodPost, "/go/run", strings.NewReader(code))
+	req, err := http.NewRequest(http.MethodPost, "/go/run", strings.NewReader(codeTextarea))
 	if err != nil {
 		fmt.Println("failed to create request", err)
 		return
@@ -84,7 +92,7 @@ func handleRun() {
 			fmt.Println("failed to read response", err)
 			return
 		}
-		window.Document.QuerySelector("ul#errors").Append(window.Document.NewElement("%s", string(buf)))
+		window.Document.QuerySelector("ul#errors").Append(window.Document.CreateTextNode(string(buf)))
 		return
 	}
 
@@ -112,14 +120,14 @@ func handleRun() {
 				fmt.Println("failed to read response stdout", err)
 				return
 			}
-			window.Document.QuerySelector("pre#stdout").SetInnerText(string(buf))
+			window.Document.QuerySelector("pre#stdout").ReplaceChildren(window.Document.CreateTextNode(string(buf)))
 		case "stderr":
 			buf, err := io.ReadAll(part)
 			if err != nil {
 				fmt.Println("failed to read response stdout", err)
 				return
 			}
-			window.Document.QuerySelector("pre#stderr").SetInnerText(string(buf))
+			window.Document.QuerySelector("pre#stderr").ReplaceChildren(window.Document.CreateTextNode(string(buf)))
 		case "output":
 			buf, err := ioutil.ReadAll(part)
 			if err != nil {
@@ -132,64 +140,65 @@ func handleRun() {
 }
 
 func runWASM(buf []byte) {
-	var runHTMLBuf bytes.Buffer
-	_ = template.Must(template.New("").Parse(runHTML)).Execute(&runHTMLBuf, struct {
-		WebappLocation string
-		WASMExec       template.JS
-	}{
-		WebappLocation: window.Location.Origin(),
-		WASMExec:       template.JS(wasmExec),
-	})
+	const runHTML = /* language=html */ `<div class="run">
+	<button class="close">X</button>
+	<iframe
+			class="run"
+			srcdoc=""
+			title="Run"
+			sandbox="allow-scripts"
+	></iframe>
+	<pre class="stdout"></pre>
+</div>`
 
-	runBox, err := window.Document.NewElementFromTemplate("run", struct {
-		RunHTML string
-	}{
-		RunHTML: runHTMLBuf.String(),
-	})
-	if err != nil {
-		panic(err)
+	origin := js.Global().Get("location").Get("origin").String()
+
+	htmlTemplate := window.Document.CreateElement("html").(browser.Element)
+	htmlTemplate.InsertAdjacentHTML(dom.PositionAfterBegin, runHTMLHEAD)
+	htmlTemplate.QuerySelector(`meta[name="go-playground-webapp-location"]`).SetAttribute("content", origin)
+	wasmExecScriptEl := window.Document.CreateElement("script")
+	wasmExecScriptEl.ReplaceChildren(window.Document.CreateTextNode(wasmExec))
+	htmlTemplate.InsertBefore(wasmExecScriptEl, htmlTemplate.QuerySelector("script"))
+	htmlTemplate.InsertAdjacentHTML(dom.PositionBeforeEnd, "<body></body>")
+
+	var sb strings.Builder
+	sb.WriteString("<!doctype html>")
+	sb.WriteString(htmlTemplate.OuterHTML())
+
+	temporaryNode := window.Document.CreateElement("div").(browser.Element)
+	temporaryNode.SetInnerHTML(runHTML)
+	temporaryNode.QuerySelector("iframe.run").SetAttribute("srcdoc", sb.String())
+	runBox := temporaryNode.FirstChild().(browser.Element)
+
+	frame := runBox.QuerySelector("iframe.run").(browser.Element)
+
+	var resources []interface {
+		Release()
 	}
-	frame := runBox.QuerySelector("iframe.run")
-	var (
-		closeLoadHandler    = func() {}
-		closeFrameHandler   = func() {}
-		closeMessageHandler = func() {}
-	)
-	closeHandler := func() {
-		closeLoadHandler()
-		closeFrameHandler()
-		closeMessageHandler()
-	}
-	closeLoadHandler = frame.AddEventListenerFunc("load", func(event window.Event) {
-		defer closeLoadHandler()
-		message := window.Get("Object").New()
+
+	loadEventListener := browser.NewEventListenerFunc(func(event browser.Event) {
+		message := window.NewObject()
 		message.Set("name", "binary")
-		array := window.Get("Uint8ClampedArray").New(len(buf))
+		array := window.NewUint8ClampedArray(len(buf))
 		_ = js.CopyBytesToJS(array, buf)
 		message.Set("binary", array)
-		frame.Get("contentWindow").Call("postMessage", message, "*")
+		js.Value(frame).Get("contentWindow").Call("postMessage", message, "*")
 	})
-	closeMessageHandler = window.AddEventListenerFunc("message", func(event window.Event) {
-		d := event.Get("data")
+	resources = append(resources, loadEventListener)
+	frame.AddEventListener("load", loadEventListener)
+
+	messageEventListener := browser.NewEventListenerFunc(func(event browser.Event) {
+		d := js.Value(event).Get("data")
 		messageName := d.Get("name").String()
 
 		switch messageName {
 		case "exit":
-			defer closeMessageHandler()
-
-			processEnd := struct {
-				ExitCode int
-				Duration time.Duration
-			}{
-				ExitCode: d.Get("exitCode").Int(),
-				Duration: time.Duration(d.Get("duration").Int()) * time.Millisecond,
-			}
-			el, err := window.Document.NewElementFromTemplate("exit-status", processEnd)
-			if err != nil {
-				panic(err)
-				return
-			}
-			runBox.Append(el)
+			exitStatusTemplate := ` <div class="exit-status"><pre>exit code {{.ExitCode}} after {{.Duration.String}}</pre></div>`
+			exitCode := d.Get("exitCode").Int()
+			duration := time.Duration(d.Get("duration").Int()) * time.Millisecond
+			exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.ExitCode}}`, strconv.Itoa(exitCode), 1)
+			exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.Duration.String}}`, duration.String(), 1)
+			runBox.InsertAdjacentHTML(dom.PositionBeforeEnd, exitStatusTemplate)
 		case "writeSync":
 			writeSyncBuf := make([]byte, d.Get("buf").Length())
 			js.CopyBytesToGo(writeSyncBuf, d.Get("buf"))
@@ -204,20 +213,24 @@ func runWASM(buf []byte) {
 			stdout.Append(window.Document.CreateTextNode(writeSyncMessage.Buf))
 		}
 	})
-	closeFrameHandler = runBox.QuerySelector("button.close").AddEventListenerFunc("click", func(event window.Event) {
-		defer closeHandler()
-		frame.Get("contentWindow").Call("close")
-		runBox.Closest("div.run").Remove()
+	resources = append(resources, loadEventListener)
+	window.AddEventListener("message", messageEventListener)
+
+	closeBtn := runBox.QuerySelector("button.close").(browser.Element)
+
+	closeEventListener := browser.NewEventListenerFunc(func(event browser.Event) {
+		divRun := runBox.Closest("div.run")
+		js.Value(frame).Get("contentWindow").Call("close")
+		divRun.ParentElement().RemoveChild(divRun)
+
+		for _, resource := range resources {
+			resource.Release()
+		}
 	})
+	resources = append(resources, closeEventListener)
+	closeBtn.AddEventListener("click", closeEventListener)
 
 	window.Document.Body().Append(runBox)
-}
-
-func fetchGoVersion() {
-	replaceTextWithResponseBody(
-		"/go/version",
-		"details#go-version pre",
-	)
 }
 
 func replaceTextWithResponseBody(urlPath, elementQuery string) {
@@ -234,11 +247,11 @@ func replaceTextWithResponseBody(urlPath, elementQuery string) {
 		fmt.Println("failed to read response", err)
 		return
 	}
-	window.Document.QuerySelector(elementQuery).SetInnerText(string(body))
+	window.Document.QuerySelector(elementQuery).ReplaceChildren(window.Document.CreateTextNode(string(body)))
 }
 
-func updateExampleCodeHandler(event window.Event) {
-	updateExampleCode(event.Target().Get("value").String())
+func updateExampleCodeHandler(event browser.Event) {
+	updateExampleCode(event.Target().(dom.InputElement).Value())
 }
 
 func updateExampleCode(name string) {
@@ -247,5 +260,5 @@ func updateExampleCode(name string) {
 		_ = f.Close()
 	}()
 	buf, _ := io.ReadAll(f)
-	window.Document.QuerySelector("textarea#code").Set("value", string(buf))
+	browser.Input(window.Document.QuerySelector("textarea#code").(browser.Element)).SetValue(string(buf))
 }

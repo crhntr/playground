@@ -81,36 +81,6 @@
 </head>
 
 <body>
-<div hidden>
-    {{define "run"}}
-      <div class="run">
-        <button class="close">X</button>
-        <iframe
-                class="run"
-                srcdoc="{{.RunHTML}}"
-                title="Run"
-                sandbox="allow-scripts"
-        ></iframe>
-        <pre class="stdout"></pre>
-      </div>
-    {{end}}
-
-    {{define "exit-status"}}
-      <div class="exit-status">
-        <pre>exit code {{.ExitCode}} after {{.Duration.String}}</pre>
-      </div>
-    {{end}}
-
-    {{define "example-selector"}}
-      <label>
-        Select Example
-        <select>
-            {{range .}}
-            <option value="{{.}}">{{.}}</option>{{end}}
-        </select>
-      </label>
-    {{end}}
-</div>
 <header>
   <div class="page-name">Playground</div>
   <a href="https://github.com/crhntr/playground" target="_blank">Source Code</a>
@@ -119,7 +89,10 @@
 <div id="downloading" hidden>Downloading... (this can take a while)</div>
 
 <div id="editor" hidden>
-  <div id="example-selector" hidden></div>
+  <label>
+    Select Example
+    <select id="select-example"></select>
+  </label>
   <label for="code"></label>
   <textarea
           id="code"
