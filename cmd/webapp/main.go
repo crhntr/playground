@@ -57,11 +57,6 @@ func main() {
 	defer runBtnClickHandler.Release()
 	runButton.AddEventListener("click", runBtnClickHandler)
 
-	replaceTextWithResponseBody(
-		"/go/version",
-		"#go-version-number",
-	)
-
 	editorEl := window.Document.QuerySelector("#editor")
 	editorEl.RemoveAttribute("hidden")
 	defer editorEl.SetAttribute("hidden", "")
@@ -232,23 +227,6 @@ func runWASM(buf []byte) {
 	closeBtn.AddEventListener("click", closeEventListener)
 
 	window.Document.QuerySelector("main").Append(runBox)
-}
-
-func replaceTextWithResponseBody(urlPath, elementQuery string) {
-	res, err := http.Get(urlPath)
-	if err != nil {
-		fmt.Printf("failed to fetch %s: %s", urlPath, err)
-		return
-	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println("failed to read response", err)
-		return
-	}
-	window.Document.QuerySelector(elementQuery).ReplaceChildren(window.Document.CreateTextNode(string(body)))
 }
 
 func updateExampleCodeHandler(event browser.Event) {

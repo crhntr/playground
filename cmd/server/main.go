@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"embed"
-	"html/template"
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -18,12 +18,15 @@ import (
 	"time"
 
 	"github.com/NYTimes/gziphandler"
+	domAST "github.com/crhntr/window/ast"
 )
+
+const CopyrightNotice = "© %d Christopher Hunter"
 
 func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/assets/", http.StripPrefix("/assets", gziphandler.GzipHandler(http.FileServer(http.FS(assetsFS)))))
-	mux.Handle("/", http.HandlerFunc(handlePage))
+	mux.HandleFunc("/", handleIndexPage())
 
 	mux.Handle("/go/version", handleVersion())
 	mux.Handle("/go/run", gziphandler.GzipHandler(handleRun()))
@@ -45,10 +48,6 @@ var (
 	//go:embed webapp
 	webappFS embed.FS
 	assetsFS fs.FS
-
-	pages = map[string]string{
-		"/": "webapp/index.gohtml",
-	}
 )
 
 func init() {
@@ -177,27 +176,38 @@ func createModFile(dir string) error {
 	return nil
 }
 
-func handlePage(res http.ResponseWriter, req *http.Request) {
-	page, ok := pages[req.URL.Path]
-	if !ok {
-		res.WriteHeader(http.StatusNotFound)
-		return
-	}
-	templates, err := template.ParseFS(webappFS, page)
-	if err != nil {
-		log.Println(err)
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	res.Header().Set("cache-control", "no-cache")
-	res.Header().Set("content-type", "text/html")
-	res.WriteHeader(http.StatusOK)
-	if err := templates.Execute(res, struct{}{}); err != nil {
-		return
+func handleIndexPage() func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+		if req.URL.Path != "/" {
+			http.Error(res, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+		template, err := webappFS.Open("webapp/index.html")
+		if err != nil {
+			log.Println("failed to open index file", err)
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		doc, err := domAST.ParseDocument(template)
+		if err != nil {
+			log.Println("failed to open index file", err)
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		doc.Body().GetElementByID("go-version").SetTextContent("Go version " + string(readGoVersion(context.Background())))
+		doc.Body().GetElementByID("copyright-notice").SetTextContent(fmt.Sprintf(CopyrightNotice, time.Now().Year()))
+
+		res.Header().Set("cache-control", "no-cache")
+		res.Header().Set("content-type", "text/html")
+		res.WriteHeader(http.StatusOK)
+		if err := domAST.RenderDocument(res, doc); err != nil {
+			return
+		}
 	}
 }
 
-func handleVersion() http.HandlerFunc {
+func readGoVersion(ctx context.Context) []byte {
 	goExecPath, lookUpErr := exec.LookPath("go")
 	if lookUpErr != nil {
 		panic(lookUpErr)
@@ -208,34 +218,37 @@ func handleVersion() http.HandlerFunc {
 	re := regexp.MustCompile(`go(?P<version>\d+[.\-\w]*)`)
 	versionMatchIndex := re.SubexpIndex("version")
 
+	cmd := exec.CommandContext(ctx, goExecPath, "version")
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	cmd.Env = env
+	err := cmd.Run()
+	if err != nil {
+		panic(buf.String())
+	}
+	output, err := io.ReadAll(&buf)
+	if err != nil {
+		panic("failed to read command output")
+	}
+	matches := re.FindSubmatch(output)
+	if len(matches) < versionMatchIndex {
+		panic("failed to read version from output")
+	}
+
+	return matches[versionMatchIndex]
+}
+
+func handleVersion() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx, cancel := context.WithTimeout(req.Context(), time.Second*2)
 		defer cancel()
 
-		cmd := exec.CommandContext(ctx, goExecPath, "version")
-		var buf bytes.Buffer
-		cmd.Stdout = &buf
-		cmd.Stderr = &buf
-		cmd.Env = env
-		err := cmd.Run()
-		if err != nil {
-			http.Error(res, buf.String(), http.StatusInternalServerError)
-			return
-		}
-		output, err := io.ReadAll(&buf)
-		if err != nil {
-			http.Error(res, "failed to read command output", http.StatusInternalServerError)
-			return
-		}
-		matches := re.FindSubmatch(output)
-		if len(matches) < versionMatchIndex {
-			http.Error(res, "failed to read version from output", http.StatusInternalServerError)
-			return
-		}
+		version := readGoVersion(ctx)
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusOK)
-		res.Write(matches[versionMatchIndex])
+		res.Write([]byte(version))
 	}
 }
 

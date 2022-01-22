@@ -1,6 +1,12 @@
 package playground
 
-import "io/fs"
+import (
+	_ "embed"
+	"io/fs"
+)
+
+//go:embed LICENSE
+var Licence string
 
 func ListFileNames(dir fs.ReadDirFS, p string) []string {
 	var result []string
