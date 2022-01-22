@@ -21,11 +21,25 @@
       }
   </script>
   <style>
-      body, html {
+      @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@100;400;900&display=swap');
+
+      :root {
+          --gopher-blue: hsl(192, 100%, 42%);
+          --aqua: hsl(178, 100%, 32%);
+          --light-blue: hsl(191, 70%, 63%);
+          --fuchsia: hsl(342, 61%, 50%);
+          --light-fuchsia: hsl(342, 61%, 80%);
+          --yellow: hsl(52, 100%, 50%);
+          --beeswax: hsl(52, 100%, 90%);
+
+          --gopher-gradient: linear-gradient(90deg, rgba(0,173,216,1) 80%, rgba(0,162,156,1) 100%)
+      }
+
+      body, html, main {
           margin: 0;
           padding: 0;
 
-          font-family: sans-serif;
+          font-family: 'Work Sans', sans-serif;
       }
 
       header {
@@ -33,7 +47,10 @@
           display: flex;
           justify-content: space-between;
           align-items: center;
-          background: HSLA(198, 48%, 41%, 1.00);
+
+          background: var(--gopher-blue);
+          background: var(--gopher-gradient);
+
           color: white;
       }
       header .page-name {
@@ -58,14 +75,10 @@
           box-sizing: border-box;
           resize: vertical;
           min-height: 20rem;
-          background: HSLA(60, 100%, 94%, 1.00);
+          background: var(--beeswax);
           padding: 1rem;
 
           font-family: monospace;
-      }
-
-      .run {
-          padding: 1rem;
       }
 
       .run iframe.run {
@@ -76,6 +89,19 @@
           display: block;
           box-sizing: border-box;
           height: 80vh;
+      }
+      .dark {
+          background: HSLA(240, 1%, 16%, 1.00);
+          color: white;
+      }
+      .dark a {
+          color: var(--light-blue);
+      }
+      .dark a:visited {
+          color: var(--light-fuchsia);
+      }
+      footer {
+          padding: 2rem; margin: 1rem 0 0 0;
       }
   </style>
 </head>
@@ -88,7 +114,7 @@
 
 <div id="downloading" hidden>Downloading... (this can take a while)</div>
 
-<div id="editor" hidden>
+<main id="editor" hidden>
   <label>
     Select Example
     <select id="select-example"></select>
@@ -111,10 +137,10 @@
   <ul id="errors">
   </ul>
 
-  <details id="go-version">
-    <summary>go version</summary>
-    <pre>loading...</pre>
-  </details>
-</div>
+</main>
+<footer class="dark">
+  <p id="go-version">Using Go version <span id="go-version-number"></span></p>
+  <p>See <a href="https://github.com/crhntr/playground" target="_blank">Source Code</a> on GitHub for licence and/or copyright documents</p>
+</footer>
 </body>
 </html>

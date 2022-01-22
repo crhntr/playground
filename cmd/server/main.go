@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -79,6 +80,10 @@ func handleRun() http.HandlerFunc {
 			_ = os.RemoveAll(tmp)
 		}()
 
+		defer func() {
+			_ = req.Body.Close()
+		}()
+
 		err = createMainFile(tmp, req.Body)
 		if err != nil {
 			http.Error(res, "failed to write main.go", http.StatusInternalServerError)
@@ -140,7 +145,7 @@ func handleRun() http.HandlerFunc {
 	}
 }
 
-func createMainFile(dir string, rc io.ReadCloser) error {
+func createMainFile(dir string, rc io.Reader) error {
 	fp := filepath.Join(dir, "main.go")
 	f, err := os.Create(fp)
 	if err != nil {
@@ -200,6 +205,9 @@ func handleVersion() http.HandlerFunc {
 
 	env := mergeEnv(os.Environ(), goEnvOverride()...)
 
+	re := regexp.MustCompile(`go(?P<version>\d+[.\-\w]*)`)
+	versionMatchIndex := re.SubexpIndex("version")
+
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx, cancel := context.WithTimeout(req.Context(), time.Second*2)
 		defer cancel()
@@ -214,8 +222,20 @@ func handleVersion() http.HandlerFunc {
 			http.Error(res, buf.String(), http.StatusInternalServerError)
 			return
 		}
+		output, err := io.ReadAll(&buf)
+		if err != nil {
+			http.Error(res, "failed to read command output", http.StatusInternalServerError)
+			return
+		}
+		matches := re.FindSubmatch(output)
+		if len(matches) < versionMatchIndex {
+			http.Error(res, "failed to read version from output", http.StatusInternalServerError)
+			return
+		}
+
+		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusOK)
-		_, _ = io.Copy(res, &buf)
+		res.Write(matches[versionMatchIndex])
 	}
 }
 

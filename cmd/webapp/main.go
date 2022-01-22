@@ -59,7 +59,7 @@ func main() {
 
 	replaceTextWithResponseBody(
 		"/go/version",
-		"details#go-version pre",
+		"#go-version-number",
 	)
 
 	editorEl := window.Document.QuerySelector("#editor")
@@ -231,7 +231,7 @@ func runWASM(buf []byte) {
 	resources = append(resources, closeEventListener)
 	closeBtn.AddEventListener("click", closeEventListener)
 
-	window.Document.Body().Append(runBox)
+	window.Document.QuerySelector("main").Append(runBox)
 }
 
 func replaceTextWithResponseBody(urlPath, elementQuery string) {
