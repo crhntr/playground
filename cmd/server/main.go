@@ -19,6 +19,8 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	domAST "github.com/crhntr/window/ast"
+
+	"github.com/crhntr/playground/view"
 )
 
 const CopyrightNotice = "© %d Christopher Hunter"
@@ -195,8 +197,10 @@ func handleIndexPage() func(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		doc.Body().GetElementByID("go-version").SetTextContent("Go version " + string(readGoVersion(context.Background())))
-		doc.Body().GetElementByID("copyright-notice").SetTextContent(fmt.Sprintf(CopyrightNotice, time.Now().Year()))
+		view.IndexData{
+			GoVersion: string(readGoVersion(context.Background())),
+			Copyright: fmt.Sprintf(CopyrightNotice, time.Now().Year()),
+		}.Update(doc.Body())
 
 		res.Header().Set("cache-control", "no-cache")
 		res.Header().Set("content-type", "text/html")

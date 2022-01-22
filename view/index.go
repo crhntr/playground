@@ -13,7 +13,7 @@ type IndexData struct {
 
 func (data IndexData) Update(body dom.Element) {
 	if data.GoVersion != "" {
-		el := body.GetElementByID("go-version-number")
+		el := body.GetElementByID("go-version")
 		el.SetTextContent("Using Go version " + data.GoVersion)
 	}
 	if data.Copyright != "" {
