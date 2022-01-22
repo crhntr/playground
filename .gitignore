@@ -4,3 +4,4 @@
 
 cmd/server/webapp
 !cmd/server/webapp/.gitkeep
+vendor

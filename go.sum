@@ -4,6 +4,12 @@ github.com/crhntr/please v0.0.0-20211216034100-14193ffafdec h1:7yK7vbSRbzy7wbHE/
 github.com/crhntr/please v0.0.0-20211216034100-14193ffafdec/go.mod h1:1x5Or2YIEjrE1G0sgMlUEfDxwM012vpHDMtCISj0oRM=
 github.com/crhntr/window v0.0.0-20211227095712-0b1bd464c0a3 h1:XcLA6TvuI6Cypq1r/taAFhG/4UEv0sS0fpRO3meOcBQ=
 github.com/crhntr/window v0.0.0-20211227095712-0b1bd464c0a3/go.mod h1:3Y7Hld56pNQbd3fOCLoBwUTuK12Exy5rhAFZrixueXU=
+github.com/crhntr/window v0.0.0-20220107230642-8f0cf144f553 h1:klzEb+0AneCpe9EIzbLaiIiakXJesclYyYgCUv0OHJQ=
+github.com/crhntr/window v0.0.0-20220107230642-8f0cf144f553/go.mod h1:Epo+BpQJzX6wi8LRZ8YaKHOpl5oFFufsB3ivyZ1UdfU=
+github.com/crhntr/window v0.0.0-20220107231217-631675c3391e h1:HY1tLTUTx/kghGfmwbkTxbIUk+Kg7AmBODDcU8g7l/k=
+github.com/crhntr/window v0.0.0-20220107231217-631675c3391e/go.mod h1:Epo+BpQJzX6wi8LRZ8YaKHOpl5oFFufsB3ivyZ1UdfU=
+github.com/crhntr/window v0.0.0-20220107233352-45cf380510f1 h1:/zxbOPjvdZXiYVkqS0ZI4QtRAY1YDxF0/tfjpZvq1Lw=
+github.com/crhntr/window v0.0.0-20220107233352-45cf380510f1/go.mod h1:Epo+BpQJzX6wi8LRZ8YaKHOpl5oFFufsB3ivyZ1UdfU=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
