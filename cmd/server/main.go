@@ -252,7 +252,7 @@ func handleVersion() http.HandlerFunc {
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusOK)
-		res.Write([]byte(version))
+		res.Write(version)
 	}
 }
 
