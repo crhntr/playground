@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall/js"
 	"time"
 
@@ -50,8 +51,10 @@ func main() {
 	selectExample.AddEventListener("change", exampleChangeHandler)
 
 	runButton := window.Document.QuerySelector("button#run").(browser.Element)
+	var runCount int64
 	runBtnClickHandler := browser.NewEventListenerFunc(func(event browser.Event) {
-		go handleRun()
+		atomic.AddInt64(&runCount, 1)
+		go handleRun(int(runCount))
 	})
 	defer runBtnClickHandler.Release()
 	runButton.AddEventListener("click", runBtnClickHandler)
@@ -60,10 +63,49 @@ func main() {
 	editorEl.RemoveAttribute("hidden")
 	defer editorEl.SetAttribute("hidden", "")
 
+	messageHandler := browser.NewEventListenerFunc(func(event browser.Event) {
+		d := js.Value(event).Get("data")
+		messageName := d.Get("name").String()
+
+		runNode := window.Document.QuerySelector(fmt.Sprintf(`[data-run-id="%d"]`, d.Get("runID").Int()))
+		if runNode == nil {
+			return
+		}
+		runBox, ok := runNode.(browser.Element)
+		if !ok || runBox.Attribute("data-run-id") != strconv.Itoa(d.Get("runID").Int()) {
+			return
+		}
+
+		switch messageName {
+		case "exit":
+			exitStatusTemplate := /* language=gohtml */ ` <div class="exit-status"><pre>exit code {{.ExitCode}} after {{.Duration.String}}</pre></div>`
+			exitCode := d.Get("exitCode").Int()
+
+			duration := time.Duration(d.Get("duration").Int()) * time.Millisecond
+			exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.ExitCode}}`, strconv.Itoa(exitCode), 1)
+			exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.Duration.String}}`, duration.String(), 1)
+			runBox.InsertAdjacentHTML(dom.PositionBeforeEnd, exitStatusTemplate)
+		case "writeSync":
+			writeSyncBuf := make([]byte, d.Get("buf").Length())
+			js.CopyBytesToGo(writeSyncBuf, d.Get("buf"))
+			writeSyncMessage := struct {
+				Buf string
+				FD  int
+			}{
+				Buf: string(writeSyncBuf),
+				FD:  d.Get("fd").Int(),
+			}
+			stdout := runBox.QuerySelector(".stdout")
+			stdout.Append(window.Document.CreateTextNode(writeSyncMessage.Buf))
+		}
+	})
+	defer messageHandler.Release()
+	window.AddEventListener("message", messageHandler)
+
 	select {}
 }
 
-func handleRun() {
+func handleRun(runID int) {
 	codeTextareaEl := window.Document.QuerySelector("textarea#code").(browser.Element)
 	codeTextarea := browser.Input(codeTextareaEl).Value()
 
@@ -129,13 +171,13 @@ func handleRun() {
 				fmt.Println("failed to read response output", err)
 				return
 			}
-			runWASM(buf)
+			runWASM(runID, buf)
 		}
 	}
 }
 
-func runWASM(buf []byte) {
-	const runHTML = /* language=html */ `<div class="run">
+func runWASM(runID int, buf []byte) {
+	const runHTML = /* language=html */ `<div class="run" data-run-id="">
 	<button class="close">X</button>
 	<iframe
 			class="run"
@@ -148,9 +190,12 @@ func runWASM(buf []byte) {
 
 	origin := js.Global().Get("location").Get("origin").String()
 
+	runIDString := strconv.Itoa(runID)
+
 	htmlTemplate := window.Document.CreateElement("html").(browser.Element)
 	htmlTemplate.InsertAdjacentHTML(dom.PositionAfterBegin, runHTMLHEAD)
 	htmlTemplate.QuerySelector(`meta[name="go-playground-webapp-location"]`).SetAttribute("content", origin)
+	htmlTemplate.QuerySelector(`meta[name="go-playground-run-id"]`).SetAttribute("content", runIDString)
 	wasmExecScriptEl := window.Document.CreateElement("script")
 	wasmExecScriptEl.ReplaceChildren(window.Document.CreateTextNode(wasmExec))
 	htmlTemplate.InsertBefore(wasmExecScriptEl, htmlTemplate.QuerySelector("script"))
@@ -164,6 +209,8 @@ func runWASM(buf []byte) {
 	temporaryNode.SetInnerHTML(runHTML)
 	temporaryNode.QuerySelector("iframe.run").SetAttribute("srcdoc", sb.String())
 	runBox := temporaryNode.FirstChild().(browser.Element)
+
+	runBox.SetAttribute("data-run-id", runIDString)
 
 	frame := runBox.QuerySelector("iframe.run").(browser.Element)
 
@@ -181,35 +228,6 @@ func runWASM(buf []byte) {
 	})
 	resources = append(resources, loadEventListener)
 	frame.AddEventListener("load", loadEventListener)
-
-	messageEventListener := browser.NewEventListenerFunc(func(event browser.Event) {
-		d := js.Value(event).Get("data")
-		messageName := d.Get("name").String()
-
-		switch messageName {
-		case "exit":
-			exitStatusTemplate := ` <div class="exit-status"><pre>exit code {{.ExitCode}} after {{.Duration.String}}</pre></div>`
-			exitCode := d.Get("exitCode").Int()
-			duration := time.Duration(d.Get("duration").Int()) * time.Millisecond
-			exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.ExitCode}}`, strconv.Itoa(exitCode), 1)
-			exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.Duration.String}}`, duration.String(), 1)
-			runBox.InsertAdjacentHTML(dom.PositionBeforeEnd, exitStatusTemplate)
-		case "writeSync":
-			writeSyncBuf := make([]byte, d.Get("buf").Length())
-			js.CopyBytesToGo(writeSyncBuf, d.Get("buf"))
-			writeSyncMessage := struct {
-				Buf string
-				FD  int
-			}{
-				Buf: string(writeSyncBuf),
-				FD:  d.Get("fd").Int(),
-			}
-			stdout := runBox.QuerySelector(".stdout")
-			stdout.Append(window.Document.CreateTextNode(writeSyncMessage.Buf))
-		}
-	})
-	resources = append(resources, loadEventListener)
-	window.AddEventListener("message", messageEventListener)
 
 	closeBtn := runBox.QuerySelector("button.close").(browser.Element)
 
