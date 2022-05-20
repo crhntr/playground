@@ -178,15 +178,17 @@ func handleRun(runID int) {
 
 func runWASM(runID int, buf []byte) {
 	const runHTML = /* language=html */ `<div class="run" data-run-id="">
-	<button class="close">X</button>
-	<iframe
-			class="run"
-			srcdoc=""
-			title="Run"
-			sandbox="allow-scripts"
-	></iframe>
-	<pre class="stdout"></pre>
-</div>`
+		<button class="close" style="font-weight: bolder; color: var(--fuchsia)">x</button>
+		<label for="hide-window" class="button" style="font-weight: bolder; color: var(--yellow)">-</label>
+		<input id="hide-window" type="checkbox" style="display: none;">
+		<iframe
+				class="run"
+				srcdoc=""
+				title="Run"
+				sandbox="allow-scripts"
+		></iframe>
+		<pre class="stdout"></pre>
+	</div>`
 
 	origin := js.Global().Get("location").Get("origin").String()
 

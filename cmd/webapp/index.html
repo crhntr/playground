@@ -103,6 +103,24 @@
       footer {
           padding: 2rem; margin: 1rem 0 0 0;
       }
+      input[type=checkbox]:checked + iframe {
+          display: none;
+      }
+
+      .button, button {
+        -webkit-appearance: button;
+        text-transform: none;
+        overflow: visible;
+        font-family: inherit;
+        font-size: 100%;
+        line-height: 1.15;
+        margin: 0;
+        text-align: center;
+      }
+      .button {
+        padding: .25rem;
+        min-width: 1rem;
+      }
   </style>
 </head>
 
