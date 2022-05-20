@@ -129,7 +129,7 @@ func handleRun(runID int) {
 			fmt.Println("failed to read response", err)
 			return
 		}
-		window.Document.QuerySelector("ul#errors").Append(window.Document.CreateTextNode(string(buf)))
+		window.Document.QuerySelector("pre#stderr").ReplaceChildren(window.Document.CreateTextNode(string(buf)))
 		return
 	}
 
