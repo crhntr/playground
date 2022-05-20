@@ -180,8 +180,8 @@ func handleRun(runID int) {
 func runWASM(runID int, buf []byte) {
 	const runHTML = /* language=html */ `<div class="run" data-run-id="">
 		<button class="close" style="font-weight: bolder; color: var(--fuchsia)">x</button>
-		<label for="hide-window" class="button" style="font-weight: bolder; color: var(--yellow)">-</label>
 		<input id="hide-window" type="checkbox" style="display: none;">
+		<label for="hide-window" class="button" style="font-weight: bolder;"></label>
 		<iframe
 				class="run"
 				srcdoc=""

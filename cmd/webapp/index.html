@@ -103,8 +103,21 @@
       footer {
           padding: 2rem; margin: 1rem 0 0 0;
       }
-      input[type=checkbox]:checked + iframe {
+      input[type=checkbox]:checked + label + iframe.run {
           display: none;
+      }
+
+      input[type=checkbox]:not(:checked) + label {
+        color: var(--yellow);
+      }
+      input[type=checkbox]:checked + label {
+        color: var(--aqua);
+      }
+      input[type=checkbox]:not(:checked) + label:after {
+        content: "-";
+      }
+      input[type=checkbox]:checked + label:after {
+        content: "+";
       }
 
       .button, button {
