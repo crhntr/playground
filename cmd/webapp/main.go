@@ -132,6 +132,7 @@ func handleRun(runID int) {
 		window.Document.QuerySelector("pre#stderr").ReplaceChildren(window.Document.CreateTextNode(string(buf)))
 		return
 	}
+	window.Document.QuerySelector("pre#stderr").ReplaceChildren()
 
 	_, params, err := mime.ParseMediaType(res.Header.Get("Content-Type"))
 	if err != nil {
