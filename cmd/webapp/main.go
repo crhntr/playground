@@ -54,7 +54,11 @@ func main() {
 	var runCount int64
 	runBtnClickHandler := browser.NewEventListenerFunc(func(event browser.Event) {
 		atomic.AddInt64(&runCount, 1)
-		go handleRun(int(runCount))
+
+		codeTextareaEl := window.Document.QuerySelector("textarea#code").(browser.Element)
+		codeTextarea := browser.Input(codeTextareaEl).Value()
+
+		go handleBrowserRun(int(runCount), codeTextarea)
 	})
 	defer runBtnClickHandler.Release()
 	runButton.AddEventListener("click", runBtnClickHandler)
@@ -63,53 +67,52 @@ func main() {
 	editorEl.RemoveAttribute("hidden")
 	defer editorEl.SetAttribute("hidden", "")
 
-	messageHandler := browser.NewEventListenerFunc(func(event browser.Event) {
-		d := js.Value(event).Get("data")
-		messageName := d.Get("name").String()
-
-		runNode := window.Document.QuerySelector(fmt.Sprintf(`[data-run-id="%d"]`, d.Get("runID").Int()))
-		if runNode == nil {
-			return
-		}
-		runBox, ok := runNode.(browser.Element)
-		if !ok || runBox.Attribute("data-run-id") != strconv.Itoa(d.Get("runID").Int()) {
-			return
-		}
-
-		switch messageName {
-		case "exit":
-			exitStatusTemplate := /* language=gohtml */ ` <div class="exit-status"><pre>exit code {{.ExitCode}} after {{.Duration.String}}</pre></div>`
-			exitCode := d.Get("exitCode").Int()
-
-			duration := time.Duration(d.Get("duration").Int()) * time.Millisecond
-			exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.ExitCode}}`, strconv.Itoa(exitCode), 1)
-			exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.Duration.String}}`, duration.String(), 1)
-			runBox.InsertAdjacentHTML(dom.PositionBeforeEnd, exitStatusTemplate)
-		case "writeSync":
-			writeSyncBuf := make([]byte, d.Get("buf").Length())
-			js.CopyBytesToGo(writeSyncBuf, d.Get("buf"))
-			writeSyncMessage := struct {
-				Buf string
-				FD  int
-			}{
-				Buf: string(writeSyncBuf),
-				FD:  d.Get("fd").Int(),
-			}
-			stdout := runBox.QuerySelector(".stdout")
-			stdout.Append(window.Document.CreateTextNode(writeSyncMessage.Buf))
-		}
-	})
+	messageHandler := browser.NewEventListenerFunc(handleMessageEvent)
 	defer messageHandler.Release()
 	window.AddEventListener("message", messageHandler)
 
 	select {}
 }
 
-func handleRun(runID int) {
-	codeTextareaEl := window.Document.QuerySelector("textarea#code").(browser.Element)
-	codeTextarea := browser.Input(codeTextareaEl).Value()
+func handleMessageEvent(event browser.Event) {
+	d := js.Value(event).Get("data")
+	messageName := d.Get("name").String()
 
-	req, err := http.NewRequest(http.MethodPost, "/go/run", strings.NewReader(codeTextarea))
+	runNode := window.Document.QuerySelector(fmt.Sprintf(`[data-run-id="%d"]`, d.Get("runID").Int()))
+	if runNode == nil {
+		return
+	}
+	runBox, ok := runNode.(browser.Element)
+	if !ok || runBox.Attribute("data-run-id") != strconv.Itoa(d.Get("runID").Int()) {
+		return
+	}
+
+	switch messageName {
+	case "exit":
+		exitStatusTemplate := /* language=gohtml */ ` <div class="exit-status"><pre>exit code {{.ExitCode}} after {{.Duration.String}}</pre></div>`
+		exitCode := d.Get("exitCode").Int()
+
+		duration := time.Duration(d.Get("duration").Int()) * time.Millisecond
+		exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.ExitCode}}`, strconv.Itoa(exitCode), 1)
+		exitStatusTemplate = strings.Replace(exitStatusTemplate, `{{.Duration.String}}`, duration.String(), 1)
+		runBox.InsertAdjacentHTML(dom.PositionBeforeEnd, exitStatusTemplate)
+	case "writeSync":
+		writeSyncBuf := make([]byte, d.Get("buf").Length())
+		js.CopyBytesToGo(writeSyncBuf, d.Get("buf"))
+		writeSyncMessage := struct {
+			Buf string
+			FD  int
+		}{
+			Buf: string(writeSyncBuf),
+			FD:  d.Get("fd").Int(),
+		}
+		stdout := runBox.QuerySelector(".stdout")
+		stdout.Append(window.Document.CreateTextNode(writeSyncMessage.Buf))
+	}
+}
+
+func handleBrowserRun(runID int, mainGo string) {
+	req, err := http.NewRequest(http.MethodPost, "/go/run", strings.NewReader(mainGo))
 	if err != nil {
 		fmt.Println("failed to create request", err)
 		return
