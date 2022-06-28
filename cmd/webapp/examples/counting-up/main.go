@@ -18,6 +18,6 @@ func main() {
 	ul := body.Call("querySelector", "ul")
 	for i := 0; i < max; i++ {
 		ul.Call("insertAdjacentHTML", "beforeEnd", fmt.Sprintf("<li>%d</li>", i))
-		time.Sleep(time.Second / 2)
+		time.Sleep(time.Second)
 	}
 }
