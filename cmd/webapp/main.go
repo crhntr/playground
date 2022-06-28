@@ -78,7 +78,7 @@ func handleMessageEvent(event browser.Event) {
 	d := js.Value(event).Get("data")
 	messageName := d.Get("name").String()
 
-	runNode := window.Document.QuerySelector(fmt.Sprintf(`[data-run-id="%d"]`, d.Get("runID").Int()))
+	runNode := window.Document.QuerySelector(fmt.Sprintf(`#run-boxes [data-run-id="%d"]`, d.Get("runID").Int()))
 	if runNode == nil {
 		return
 	}
@@ -249,7 +249,7 @@ func runWASM(runID int, buf []byte) {
 	resources = append(resources, closeEventListener)
 	closeBtn.AddEventListener("click", closeEventListener)
 
-	window.Document.QuerySelector("main").Append(runBox)
+	window.Document.QuerySelector("#run-boxes").Prepend(runBox)
 }
 
 func updateExampleCodeHandler(event browser.Event) {
