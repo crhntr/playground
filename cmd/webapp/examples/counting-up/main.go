@@ -9,7 +9,7 @@ import (
 
 func main() {
 	rand.Seed(time.Now().Unix())
-	max := rand.Intn(20) + 5
+	max := rand.Intn(8) + 2
 	fmt.Printf("max: %d\n", max)
 
 	body := js.Global().Get("document").Get("body")
@@ -18,6 +18,6 @@ func main() {
 	ul := body.Call("querySelector", "ul")
 	for i := 0; i < max; i++ {
 		ul.Call("insertAdjacentHTML", "beforeEnd", fmt.Sprintf("<li>%d</li>", i))
-		time.Sleep(time.Second)
+		time.Sleep(time.Second / 2)
 	}
 }
