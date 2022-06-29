@@ -31,6 +31,7 @@ function run() {
 
 function deploy() {
   build_webapp
+  docker pull golang:alpine
   ko apply --filename cmd/server/deployment.yml
 }
 
