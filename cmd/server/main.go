@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"embed"
+	"fmt"
+	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/NYTimes/gziphandler"
 )
@@ -57,10 +61,27 @@ func handleIndexPage() func(res http.ResponseWriter, req *http.Request) {
 			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-
+		t, err := template.New("").Parse(string(indexHTML))
+		if err != nil {
+			log.Println("failed to parse template file", err)
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		var buf bytes.Buffer
+		err = t.Execute(&buf, struct {
+			CopyrightNotice, GoVersion string
+		}{
+			CopyrightNotice: fmt.Sprintf(CopyrightNotice, time.Now().Year()),
+			GoVersion:       string(readGoVersion(req.Context())),
+		})
+		if err != nil {
+			log.Println("failed to execute index template", err)
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 		res.Header().Set("cache-control", "no-cache")
 		res.Header().Set("content-type", "text/html")
 		res.WriteHeader(http.StatusOK)
-		_, _ = res.Write(indexHTML)
+		_, _ = res.Write(buf.Bytes())
 	}
 }
