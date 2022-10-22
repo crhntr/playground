@@ -3,6 +3,8 @@ github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMo
 github.com/crhntr/please v0.0.0-20211221202609-aa7413949fc9 h1:B53gJd/uQ4zvF6we6i45nqLj84vfxFOcUVP4jN7S8wA=
 github.com/crhntr/window v0.0.0-20220122023518-6938146d2dfb h1:/pzdVPughxInB6MSi3W+mb1os3Tl8/ldIm5kZEAyD8o=
 github.com/crhntr/window v0.0.0-20220122023518-6938146d2dfb/go.mod h1:Epo+BpQJzX6wi8LRZ8YaKHOpl5oFFufsB3ivyZ1UdfU=
+github.com/crhntr/window v0.0.0-20221022043426-fc0755a127ef h1:y/xIIukSxl39dnuajs9oWFO3/XDzWutfhLc+A8pBsAI=
+github.com/crhntr/window v0.0.0-20221022043426-fc0755a127ef/go.mod h1:wrneuqw82ij5Mxh6LNTpSdR+GnJJ4G45WZueJI5qOhg=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

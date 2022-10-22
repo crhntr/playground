@@ -6,7 +6,7 @@
     <meta name="go-playground-webapp-location" content="">
     <meta name="go-playground-run-id" content="">
 
-    <script>
+    <script id="run">
         const webappLocation = document.querySelector('head>meta[name="go-playground-webapp-location"]').getAttribute('content')
 
         async function run(runID, binary) {
@@ -22,8 +22,8 @@
                 exitCode = code
                 // exit(code)
             }
-            // const writeSync = global.fs.writeSync
-            global.fs.writeSync = function (fd, buf) {
+            // const writeSync = globalThis.fs.writeSync
+            globalThis.fs.writeSync = function (fd, buf) {
                 window.parent.postMessage({name: "writeSync", fd, buf, runID}, webappLocation)
                 // return writeSync(fd, buf)
                 return buf.length

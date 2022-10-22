@@ -11,7 +11,7 @@ type IndexData struct {
 	Copyright string
 }
 
-func (data IndexData) Update(body dom.Element) {
+func (data IndexData) Update(body dom.HTMLElement) {
 	if data.GoVersion != "" {
 		el := body.GetElementByID("go-version")
 		el.SetTextContent("Using Go version " + data.GoVersion)

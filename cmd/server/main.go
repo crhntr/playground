@@ -1,19 +1,13 @@
 package main
 
 import (
-	"context"
 	"embed"
-	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/NYTimes/gziphandler"
-	domAST "github.com/crhntr/window/ast"
-
-	"github.com/crhntr/playground/view"
 )
 
 var (
@@ -57,29 +51,16 @@ func handleIndexPage() func(res http.ResponseWriter, req *http.Request) {
 			http.Error(res, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
-		template, err := webappFS.Open("webapp/index.html")
+		indexHTML, err := webappFS.ReadFile("webapp/index.html")
 		if err != nil {
 			log.Println("failed to open index file", err)
 			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		doc, err := domAST.ParseDocument(template)
-		if err != nil {
-			log.Println("failed to open index file", err)
-			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		view.IndexData{
-			GoVersion: string(readGoVersion(context.Background())),
-			Copyright: fmt.Sprintf(CopyrightNotice, time.Now().Year()),
-		}.Update(doc.Body())
 
 		res.Header().Set("cache-control", "no-cache")
 		res.Header().Set("content-type", "text/html")
 		res.WriteHeader(http.StatusOK)
-		if err := domAST.RenderDocument(res, doc); err != nil {
-			return
-		}
+		_, _ = res.Write(indexHTML)
 	}
 }
