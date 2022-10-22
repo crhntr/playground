@@ -1,8 +1,5 @@
 github.com/NYTimes/gziphandler v1.1.1 h1:ZUDjpQae29j0ryrS0u/B8HZfJBtBQHjqw2rQ2cqUQ3I=
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
-github.com/crhntr/please v0.0.0-20211221202609-aa7413949fc9 h1:B53gJd/uQ4zvF6we6i45nqLj84vfxFOcUVP4jN7S8wA=
-github.com/crhntr/window v0.0.0-20220122023518-6938146d2dfb h1:/pzdVPughxInB6MSi3W+mb1os3Tl8/ldIm5kZEAyD8o=
-github.com/crhntr/window v0.0.0-20220122023518-6938146d2dfb/go.mod h1:Epo+BpQJzX6wi8LRZ8YaKHOpl5oFFufsB3ivyZ1UdfU=
 github.com/crhntr/window v0.0.0-20221022043426-fc0755a127ef h1:y/xIIukSxl39dnuajs9oWFO3/XDzWutfhLc+A8pBsAI=
 github.com/crhntr/window v0.0.0-20221022043426-fc0755a127ef/go.mod h1:wrneuqw82ij5Mxh6LNTpSdR+GnJJ4G45WZueJI5qOhg=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
@@ -12,5 +9,3 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
-golang.org/x/net v0.0.0-20211216030914-fe4d6282115f h1:hEYJvxw1lSnWIl8X9ofsYMklzaDs90JI2az5YMd4fPM=
-golang.org/x/net v0.0.0-20211216030914-fe4d6282115f/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
