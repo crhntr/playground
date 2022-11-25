@@ -14,7 +14,7 @@ spec:
         app: playground-server
     spec:
       imagePullSecrets:
-        - name: ghcr-io
+        - name: registry-crhntr
       containers:
         - name: playground-server
           image: ko://github.com/crhntr/playground/cmd/server
