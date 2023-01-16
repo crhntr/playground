@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const CopyrightNotice = "© %d Christopher Hunter"
+const CopyrightNotice = "© 2021-%d Christopher Hunter"
 
 func readGoVersion(ctx context.Context) []byte {
 	goExecPath, lookUpErr := exec.LookPath("go")
