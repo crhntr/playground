@@ -1,0 +1,26 @@
+name: playground
+region: sfo
+domains:
+  - domain: playground.cazador.codes
+    type: PRIMARY
+    zone: cazador.codes
+  - domain: playground.crhntr.com
+    type: ALIAS
+    zone: crhntr.com
+ingress:
+  rules:
+    - component:
+        name: web
+      match:
+        path:
+          prefix: /
+services:
+  - name: web
+    github:
+      repo: crhntr/playground
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs

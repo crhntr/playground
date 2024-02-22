@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 ## UNFORTUNATELY THE SITE AT "https://playground.cazador.codes" IS DONN. I WILL FIX IT WHEN I HAVE TIME.
 
@@ -8,17 +8,18 @@
 ### ./README run
 
 ## Setup Dependencies
-function init() {
+init() {
+    docker pull golang:alpine
     go mod download
-    local assetsDir="cmd/webapp/assets/"
+    export assetsDir="cmd/webapp/assets/"
     mkdir -p "${assetsDir}"
     cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" "${assetsDir}"
 }
 
 ## Build Webapp Assets
-function build_webapp() {
-  local webappPackage="cmd/webapp"
-  local serverPackage="cmd/server"
+build_webapp() {
+  export webappPackage="cmd/webapp"
+  export serverPackage="cmd/server"
   rm -rf "${serverPackage}/webapp"
   cp -rf "${webappPackage}" "${serverPackage}"
 
@@ -26,15 +27,14 @@ function build_webapp() {
 }
 
 ## Run
-function run() {
+run() {
   build_webapp
-  go run ./cmd/server
+  docker build -t playground:dev .
+  docker run -p 8080:8080 playground:dev
 }
 
-function deploy() {
-  build_webapp
-  docker pull golang:alpine
-  ko apply --filename cmd/server/deployment.yml
+deploy() {
+  doctl apps create --spec .do/app.yaml
 }
 
 if [ $# -ne 0 ]; then
