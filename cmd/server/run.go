@@ -49,6 +49,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 
 		tmp, err := os.MkdirTemp("", "")
 		if err != nil {
+			log.Println("failed to create temporary directory", err)
 			http.Error(res, "failed to create temporary directory", http.StatusInternalServerError)
 			return
 		}
@@ -62,11 +63,13 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 
 		err = createMainFile(tmp, mainGo)
 		if err != nil {
+			log.Println("failed to write main.go", err)
 			http.Error(res, "failed to write main.go", http.StatusInternalServerError)
 			return
 		}
 		err = createModFile(tmp)
 		if err != nil {
+			log.Println("failed to create go.mod", err)
 			http.Error(res, "failed to create go.mod", http.StatusInternalServerError)
 			return
 		}
@@ -75,6 +78,8 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 		cmd := exec.CommandContext(ctx, goExecPath,
 			"build",
 			"-o", output,
+			fmt.Sprintf("-gcflags=-trimpath=%s", tmp),
+			fmt.Sprintf("-asmflags=-trimpath=%s", tmp),
 		)
 		var stdout, stderr bytes.Buffer
 		cmd.Stdout = &stdout
@@ -83,12 +88,15 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 		cmd.Dir = tmp
 		err = cmd.Run()
 		if err != nil {
+			log.Println("failed to build", err)
+			log.Println(stderr.String())
 			http.Error(res, stderr.String(), http.StatusInternalServerError)
 			return
 		}
 
 		mainWASM, err := os.ReadFile(filepath.Join(tmp, output))
 		if err != nil {
+			log.Println("failed to open build file", err)
 			http.Error(res, "failed to open build file", http.StatusInternalServerError)
 			return
 		}
@@ -99,6 +107,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 		}
 		currentURL, err := url.Parse(hxCurrentURL)
 		if err != nil {
+			log.Println("failed to parse current url", err)
 			http.Error(res, "failed to parse current url", http.StatusInternalServerError)
 			return
 		}
