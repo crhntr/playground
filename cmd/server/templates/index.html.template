@@ -45,7 +45,7 @@
 
 <main>
   {{block "editor" . -}}
-    <form hx-post="/go/run" hx-target="#run-boxes" hx-swap="innerHTML" id="editor">
+    <form hx-post="/go/run" hx-target="#runner" hx-swap="innerHTML" id="editor" hx-indicator="#run">
       <div>
         <label for="code">main.go</label>
         <textarea
@@ -58,18 +58,14 @@
                 wrap="off"
         >{{.MainGo}}</textarea>
       </div>
-      <button id="run">Run</button>
+
+      <div id="run">
+        <button id="run-trigger" type="submit">Run</button>
+        <div id="runner"></div>
+        <p id="loading-message">Your app is being built.</p>
+      </div>
     </form>
   {{- end}}
-
-  <div id="build-failure-logs">
-    {{- define "build-failure-logs"}}
-      <h2>Build Logs</h2>
-      <pre id="build-failure-logs-content"></pre>
-    {{end -}}
-  </div>
-
-  <div id="run-boxes"></div>
 </main>
 <footer class="dark">
   <p id="go-version">Using Go {{.GoVersion}}</p>

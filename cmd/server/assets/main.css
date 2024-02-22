@@ -117,6 +117,17 @@ input[type=checkbox]:checked + label:after {
 	color: var(--fuchsia)
 }
 
+#run.htmx-request #run-trigger {
+	display: none;
+}
+
+#run #loading-message {
+	display: none;
+}
+#run.htmx-request #loading-message {
+	display: block;
+}
+
 #hide-window {
 	display: none;
 }

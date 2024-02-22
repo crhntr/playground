@@ -125,7 +125,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 			WASMExecJS:   template.JS(wasmExecJS),
 		}
 
-		if req.Header.Get("HX-Target") == "run-boxes" {
+		if req.Header.Get("HX-Target") == "runner" {
 			var buf bytes.Buffer
 			if err := ts.ExecuteTemplate(&buf, "run.html.template", data); err != nil {
 				log.Println("failed to execute index template", err)
