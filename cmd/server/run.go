@@ -44,7 +44,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(req.Context(), time.Second*5)
+		ctx, cancel := context.WithTimeout(req.Context(), time.Second*30)
 		defer cancel()
 
 		tmp, err := os.MkdirTemp("", "")
