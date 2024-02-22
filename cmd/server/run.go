@@ -81,16 +81,24 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 			fmt.Sprintf("-gcflags=-trimpath=%s", tmp),
 			fmt.Sprintf("-asmflags=-trimpath=%s", tmp),
 		)
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
+		var outputBuffer bytes.Buffer
+		cmd.Stdout = &outputBuffer
+		cmd.Stderr = &outputBuffer
 		cmd.Env = env
 		cmd.Dir = tmp
 		err = cmd.Run()
 		if err != nil {
-			log.Println("failed to build", err)
-			log.Println(stderr.String())
-			http.Error(res, stderr.String(), http.StatusInternalServerError)
+			if req.Header.Get("HX-Target") == "runner" {
+				renderHTML(res, req, ts, "build-failure", http.StatusOK, struct {
+					BuildLogs string
+					RunID     int
+				}{
+					BuildLogs: outputBuffer.String(),
+					RunID:     runID,
+				})
+			} else {
+				http.Error(res, outputBuffer.String(), http.StatusBadRequest)
+			}
 			return
 		}
 
