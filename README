@@ -7,13 +7,18 @@
 ## The functions in this file can be invoked like:
 ### ./README run
 
+set -exu
+
 ## Setup Dependencies
 init() {
-    docker pull golang:alpine
     go mod download
     export assetsDir="cmd/webapp/assets/"
     mkdir -p "${assetsDir}"
-    cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" "${assetsDir}"
+    cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" cmd/server/assets/
+}
+
+assets() {
+    curl -L 'https://unpkg.com/htmx.org@1.9.10' > cmd/server/assets/htmx.js
 }
 
 ## Build Webapp Assets

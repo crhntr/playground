@@ -1,0 +1,73 @@
+{{- define "run-item"}}
+  <div class="run" data-run-id="{{.RunID}}">
+    <button class="close" hx-on:click="this.closest('.run').remove()">x</button>
+    <iframe
+            class="run"
+            srcdoc="{{.SourceHTMLDocument}}"
+            title="Run"
+            sandbox="allow-scripts"
+    ></iframe>
+    <pre class="output"></pre>
+    <pre class="exit"></pre>
+  </div>
+{{end -}}
+
+<!DOCTYPE html>
+<html lang="us-en">
+<head>
+  <title>Run</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta name="go-playground-webapp-location" content="{{.Location}}">
+  <meta name="go-playground-run-id" content="{{.RunID}}">
+  <script id="run">
+      async function run(runID, binaryBase64) {
+          const go = new Go();
+
+          globalThis.fs.writeSync = function (fd, buf) {
+              postMessage({name: "write", fd, buf, runID})
+              // return writeSync(fd, buf)
+              return buf.length
+          }
+
+          let exitCode = 0
+          // const exit = go.exit
+          go.exit = function (code) {
+              exitCode = code
+          }
+          const now = Date.now()
+
+          const process = await WebAssembly.instantiateStreaming(fetch(binaryBase64), go.importObject)
+          await go.run(process.instance)
+
+          const duration = Date.now() - now
+          postMessage({name: 'exit', exitCode, duration, runID})
+      }
+
+      function postMessage(message)  {
+          if (!window.parent) {
+              return
+          }
+          const webappLocation = document.querySelector('head>meta[name="go-playground-webapp-location"]').getAttribute('content')
+          window.parent.postMessage(message, webappLocation)
+      }
+
+      function main() {
+          const runID = parseInt(document.querySelector('meta[name="go-playground-run-id"]').getAttribute('content'))
+
+          const binaryTemplate = document.querySelector('#binary')
+          try {
+              const binaryBase64 = binaryTemplate.getAttribute('data-base64')
+              run(runID, binaryBase64)
+          } catch (e) {
+              console.error(e)
+              postMessage({name: 'error', message: e.message})
+          }
+      }
+  </script>
+</head>
+<script>{{.WASMExecJS}}</script>
+<body onload="main()"></body>
+<template id="binary" data-base64="data:application/wasm;base64,{{.BinaryBase64}}"></template>
+</html>

@@ -3,17 +3,21 @@ package main
 import (
 	"bytes"
 	"context"
-	"io"
+	"encoding/base64"
+	"fmt"
+	"html/template"
+	"io/fs"
 	"log"
-	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
-func handleRun() http.HandlerFunc {
+func handleRun(ts *template.Template) http.HandlerFunc {
 	goExecPath, lookUpErr := exec.LookPath("go")
 	if lookUpErr != nil {
 		panic(lookUpErr)
@@ -21,7 +25,25 @@ func handleRun() http.HandlerFunc {
 
 	env := mergeEnv(os.Environ(), goEnvOverride()...)
 
+	wasmExecJS, err := fs.ReadFile(assets, "assets/wasm_exec.js")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return func(res http.ResponseWriter, req *http.Request) {
+		req.ParseMultipartForm((1 << 10) * 8)
+		mainGo := req.FormValue("main.go")
+
+		var runID = 1
+		if runIDQuery := req.FormValue("run-id"); runIDQuery != "" {
+			var err error
+			runID, err = strconv.Atoi(runIDQuery)
+			if err != nil {
+				http.Error(res, "invalid run id", http.StatusBadRequest)
+				return
+			}
+		}
+
 		ctx, cancel := context.WithTimeout(req.Context(), time.Second*5)
 		defer cancel()
 
@@ -38,7 +60,7 @@ func handleRun() http.HandlerFunc {
 			_ = req.Body.Close()
 		}()
 
-		err = createMainFile(tmp, req.Body)
+		err = createMainFile(tmp, mainGo)
 		if err != nil {
 			http.Error(res, "failed to write main.go", http.StatusInternalServerError)
 			return
@@ -65,54 +87,53 @@ func handleRun() http.HandlerFunc {
 			return
 		}
 
-		b, err := os.Open(filepath.Join(tmp, output))
+		mainWASM, err := os.ReadFile(filepath.Join(tmp, output))
 		if err != nil {
 			http.Error(res, "failed to open build file", http.StatusInternalServerError)
 			return
 		}
-		defer func() {
-			_ = b.Close()
-		}()
-		mw := multipart.NewWriter(res)
-		defer func() {
-			_ = mw.Close()
-		}()
-		res.Header().Set("Content-Type", mw.FormDataContentType())
-		res.WriteHeader(http.StatusOK)
 
-		err = mw.WriteField("stdout", stdout.String())
+		hxCurrentURL := req.Header.Get("hx-current-url")
+		if hxCurrentURL == "" {
+			hxCurrentURL = "http://" + req.Host
+		}
+		currentURL, err := url.Parse(hxCurrentURL)
 		if err != nil {
-			log.Println(err)
+			http.Error(res, "failed to parse current url", http.StatusInternalServerError)
 			return
 		}
-		err = mw.WriteField("stderr", stderr.String())
-		if err != nil {
-			log.Println(err)
-			return
+
+		data := struct {
+			Location           string
+			RunID              int
+			BinaryBase64       string
+			SourceHTMLDocument string
+			WASMExecJS         template.JS
+		}{
+			Location:     fmt.Sprintf("%s://%s", currentURL.Scheme, currentURL.Host),
+			RunID:        runID,
+			BinaryBase64: base64.StdEncoding.EncodeToString(mainWASM),
+			WASMExecJS:   template.JS(wasmExecJS),
 		}
-		wasm, err := mw.CreateFormFile("output", "main.wasm")
-		if err != nil {
-			log.Println(err)
-			return
+
+		if req.Header.Get("HX-Target") == "run-boxes" {
+			var buf bytes.Buffer
+			if err := ts.ExecuteTemplate(&buf, "run.html.template", data); err != nil {
+				log.Println("failed to execute index template", err)
+				http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			data.SourceHTMLDocument = buf.String()
+			renderHTML(res, req, ts, "run-item", http.StatusOK, data)
+		} else {
+			renderHTML(res, req, ts, "run.html.template", http.StatusOK, data)
 		}
-		_, _ = io.Copy(wasm, b)
 	}
 }
 
-func createMainFile(dir string, rc io.Reader) error {
+func createMainFile(dir, mainGo string) error {
 	fp := filepath.Join(dir, "main.go")
-	f, err := os.Create(fp)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-	_, err = io.Copy(f, io.LimitReader(rc, 1<<15))
-	if err != nil {
-		return err
-	}
-	return nil
+	return os.WriteFile(fp, []byte(mainGo), 0644)
 }
 
 func createModFile(dir string) error {

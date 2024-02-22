@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@100;400;900&display=swap');
+
+:root {
+	--gopher-blue: hsl(192, 100%, 42%);
+	--aqua: hsl(178, 100%, 32%);
+	--light-blue: hsl(191, 70%, 63%);
+	--fuchsia: hsl(342, 61%, 50%);
+	--light-fuchsia: hsl(342, 61%, 80%);
+	--yellow: hsl(52, 100%, 50%);
+	--beeswax: hsl(52, 100%, 90%);
+
+	--gopher-gradient: linear-gradient(90deg, rgba(0,173,216,1) 80%, rgba(0,162,156,1) 100%)
+}
+
+body, html, main {
+	margin: 0;
+	padding: 0;
+
+	font-family: 'Work Sans', sans-serif;
+}
+
+header {
+	margin-bottom: 2rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+
+	background: var(--gopher-blue);
+	background: var(--gopher-gradient);
+
+	color: white;
+}
+header .page-name {
+	padding: .5rem;
+	font-size: 1.8rem;
+}
+header a {
+	padding: .5rem;
+	text-decoration: none;
+	color: white;
+}
+
+main {
+	padding: 1rem;
+}
+
+#editor textarea#code {
+	border: .05rem solid dimgrey;
+	box-shadow: none;
+	width: calc(100% - 2 * .05rem);
+	display: block;
+	box-sizing: border-box;
+	resize: vertical;
+	min-height: 20rem;
+	background: var(--beeswax);
+	padding: 1rem;
+
+	font-family: monospace;
+}
+
+.run iframe.run {
+	border: .05rem solid dimgrey;
+	box-shadow: none;
+	padding: 0;
+	width: calc(100vw - 2 * 1rem - 2 * .1rem);
+	display: block;
+	box-sizing: border-box;
+	height: 80vh;
+}
+.dark {
+	background: HSLA(240, 1%, 16%, 1.00);
+	color: white;
+}
+.dark a {
+	color: var(--light-blue);
+}
+.dark a:visited {
+	color: var(--light-fuchsia);
+}
+footer {
+	padding: 2rem; margin: 1rem 0 0 0;
+}
+input[type=checkbox]:checked + label + iframe.run {
+	display: none;
+}
+
+input[type=checkbox]:not(:checked) + label {
+	color: var(--yellow);
+}
+input[type=checkbox]:checked + label {
+	color: var(--aqua);
+}
+input[type=checkbox]:not(:checked) + label:after {
+	content: "-";
+}
+input[type=checkbox]:checked + label:after {
+	content: "+";
+}
+
+.button, button {
+	-webkit-appearance: button;
+	text-transform: none;
+	overflow: visible;
+	font-family: inherit;
+	font-size: 100%;
+	line-height: 1.15;
+	margin: 0;
+	text-align: center;
+}
+.button {
+	padding: .25rem;
+	min-width: 1rem;
+}
+
+.run button.close {
+	font-weight: bolder;
+	color: var(--fuchsia)
+}
+
+#hide-window {
+	display: none;
+}
+[for="hide-window"] {
+	font-weight: bolder;
+}

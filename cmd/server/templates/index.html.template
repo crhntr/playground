@@ -1,0 +1,79 @@
+<!doctype html>
+<html class="no-js" lang="us-en">
+<head>
+  <title>{{if .Name}}{{.Name}} | {{end}}Playground</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/assets/htmx.js" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" type="text/css" href="/assets/main.css">
+  <script>
+    function eventIframe(event) {
+        return Array.from(document.getElementsByTagName('iframe')).filter(iframe => {
+            return iframe.contentWindow === event.source;
+        })[0]
+    }
+    function main() {
+        window.addEventListener('message', function (event) {
+            console.log(event)
+            if (event.data.name === "write") {
+                const runBox = eventIframe(event).closest('[data-run-id]')
+                const output = runBox.querySelector('.output')
+                const line = new TextDecoder().decode(event.data.buf)
+                output.insertAdjacentText('beforeend', line)
+            } else if (event.data.name === "exit") {
+                const runBox = eventIframe(event).closest('[data-run-id]')
+                const exit = runBox.querySelector('.exit')
+                exit.innerText = `exit with ${event.data.exitCode} after ${event.data.duration}ms`
+            }
+        })
+    }
+  </script>
+</head>
+
+<body onload="main()">
+<header>
+  <div class="page-name">Playground</div>
+  <div>
+    <select id="select-example" hx-get="/" hx-select="#editor" hx-swap="outerHTML" hx-target="#editor" name="example" aria-label="Select Example">
+        {{- range .Examples}}
+          <option value="{{.Name}}" {{if eq $.Name .Name}}selected{{end}}>{{.Name}}</option>
+        {{end -}}
+    </select>
+    <a href="https://github.com/crhntr/playground" target="_blank">Source Code</a>
+  </div>
+</header>
+
+<main>
+  {{block "editor" . -}}
+    <form hx-post="/go/run" hx-target="#run-boxes" hx-swap="innerHTML" id="editor">
+      <div>
+        <label for="code">main.go</label>
+        <textarea
+                id="code"
+                name="main.go"
+                spellcheck="false"
+                autofocus
+                autocomplete="off"
+                autocapitalize="off"
+                wrap="off"
+        >{{.MainGo}}</textarea>
+      </div>
+      <button id="run">Run</button>
+    </form>
+  {{- end}}
+
+  <div id="build-failure-logs">
+    {{- define "build-failure-logs"}}
+      <h2>Build Logs</h2>
+      <pre id="build-failure-logs-content"></pre>
+    {{end -}}
+  </div>
+
+  <div id="run-boxes"></div>
+</main>
+<footer class="dark">
+  <p id="go-version">Using Go {{.GoVersion}}</p>
+  <p id="copyright-notice">{{.CopyrightNotice}}</p>
+</footer>
+</body>
+</html>

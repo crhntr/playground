@@ -5,3 +5,5 @@
 cmd/server/webapp
 !cmd/server/webapp/.gitkeep
 vendor
+
+cmd/server/assets/htmx.js
