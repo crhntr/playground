@@ -47,7 +47,6 @@
   {{block "editor" . -}}
     <form hx-post="/go/run" hx-target="#runner" hx-swap="innerHTML" id="editor" hx-indicator="#run">
       <div>
-        <label for="code">main.go</label>
         <textarea
                 id="code"
                 name="main.go"
@@ -56,6 +55,7 @@
                 autocomplete="off"
                 autocapitalize="off"
                 wrap="off"
+                aria-label="main.go"
         >{{.MainGo}}</textarea>
       </div>
 
