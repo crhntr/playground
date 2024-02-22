@@ -127,6 +127,9 @@ input[type=checkbox]:checked + label:after {
 #run.htmx-request #loading-message {
 	display: block;
 }
+#run.htmx-request #runner {
+	display: none;
+}
 
 #hide-window {
 	display: none;
