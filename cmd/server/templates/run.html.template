@@ -31,16 +31,19 @@
       async function run(runID, binaryBase64) {
           const go = new Go();
 
+          const writeSync = globalThis.fs.writeSync
           globalThis.fs.writeSync = function (fd, buf) {
-              postMessage({name: "write", fd, buf, runID})
-              // return writeSync(fd, buf)
+              if (!postMessage({name: "write", fd, buf, runID})) {
+                  return writeSync(fd, buf)
+              }
               return buf.length
           }
 
           let exitCode = 0
-          // const exit = go.exit
+          const exitFn = go.exit
           go.exit = function (code) {
               exitCode = code
+              exitFn(code)
           }
           const now = Date.now()
 
@@ -53,10 +56,11 @@
 
       function postMessage(message)  {
           if (!window.parent) {
-              return
+              return false
           }
           const webappLocation = document.querySelector('head>meta[name="go-playground-webapp-location"]').getAttribute('content')
           window.parent.postMessage(message, webappLocation)
+          return true
       }
 
       function main() {
