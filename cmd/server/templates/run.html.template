@@ -11,6 +11,7 @@
     <pre class="exit"></pre>
   </div>
 {{end -}}
+
 {{- define "build-failure"}}
   <div class="run" data-run-id="{{.RunID}}">
     <pre>{{.BuildLogs}}</pre>

@@ -3,8 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/base64"
 	"fmt"
+	"go/parser"
+	"go/token"
 	"html/template"
 	"io/fs"
 	"log"
@@ -13,7 +16,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -25,7 +30,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 
 	env := mergeEnv(os.Environ(), goEnvOverride()...)
 
-	wasmExecJS, err := fs.ReadFile(assets, "assets/wasm_exec.js")
+	wasmExecJS, err := fs.ReadFile(assets, "assets/lib/wasm_exec.js")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,6 +65,17 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 		defer func() {
 			_ = req.Body.Close()
 		}()
+
+		if err := checkImports(mainGo); err != nil {
+			renderHTML(res, req, ts, "build-failure", http.StatusOK, struct {
+				BuildLogs string
+				RunID     int
+			}{
+				BuildLogs: err.Error(),
+				RunID:     runID,
+			})
+			return
+		}
 
 		err = createMainFile(tmp, mainGo)
 		if err != nil {
@@ -167,4 +183,30 @@ func createModFile(dir string) error {
 		return err
 	}
 	return nil
+}
+
+func checkImports(mainGo string) error {
+	var fileSet token.FileSet
+	file, err := parser.ParseFile(&fileSet, "main.go", mainGo, parser.ImportsOnly)
+	if err != nil {
+		return fmt.Errorf("failed to parse main.go: %w", err)
+	}
+
+	for _, spec := range file.Imports {
+		path, _ := strconv.Unquote(spec.Path.Value)
+		if slices.Index(permittedPackages(), path) >= 0 {
+			continue
+		}
+		return fmt.Errorf("importing %q is not permitted on this site", path)
+	}
+
+	return nil
+}
+
+//go:embed assets/import_allow_list.txt
+var permittedPackagesString string
+
+func permittedPackages() []string {
+	list := strings.Split(permittedPackagesString, "\n")
+	return list
 }
