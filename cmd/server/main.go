@@ -13,21 +13,16 @@ import (
 var (
 	//go:embed assets
 	assets embed.FS
-
-	//go:embed templates
-	templates embed.FS
 )
 
 func main() {
-	ts := template.Must(template.New("").ParseFS(templates, "templates/*.template"))
-
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /assets/", http.FileServer(http.FS(assets)))
-	mux.HandleFunc("GET /", handleIndexPage(ts))
+	mux.HandleFunc("GET /", handleIndexPage())
 
 	mux.Handle("GET /go/version", handleVersion())
-	mux.Handle("POST /go/run", handleRun(ts))
+	mux.Handle("POST /go/run", handleRun())
 
 	port, ok := os.LookupEnv("PORT")
 	if !ok || port == "" {
@@ -41,6 +36,13 @@ func main() {
 		panic(err)
 	}
 }
+
+var (
+	//go:embed templates
+	templateSource embed.FS
+
+	templates = template.Must(template.New("").ParseFS(templateSource, "templates/*.template"))
+)
 
 func renderHTML(res http.ResponseWriter, _ *http.Request, ts *template.Template, code int, data any) {
 	var buf bytes.Buffer

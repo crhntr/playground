@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
@@ -24,7 +23,7 @@ type Example struct {
 	Name string
 }
 
-func handleIndexPage(ts *template.Template) func(res http.ResponseWriter, req *http.Request) {
+func handleIndexPage() func(res http.ResponseWriter, req *http.Request) {
 	const defaultExampleName = "hello-world"
 
 	exampleDirectories, err := fs.ReadDir(assets, "assets/examples")
@@ -78,6 +77,6 @@ func handleIndexPage(ts *template.Template) func(res http.ResponseWriter, req *h
 			}
 		}
 
-		renderHTML(res, req, ts.Lookup("index.html.template"), http.StatusOK, data)
+		renderHTML(res, req, templates.Lookup("index.html.template"), http.StatusOK, data)
 	}
 }

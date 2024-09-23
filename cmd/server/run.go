@@ -36,7 +36,7 @@ type (
 	}
 )
 
-func handleRun(ts *template.Template) http.HandlerFunc {
+func handleRun() http.HandlerFunc {
 	goExecPath, lookUpErr := exec.LookPath("go")
 	if lookUpErr != nil {
 		log.Fatal(lookUpErr)
@@ -81,7 +81,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 		}()
 
 		if err := checkImports(mainGo); err != nil {
-			renderHTML(res, req, ts.Lookup("build-failure"), http.StatusOK, RunFailure{
+			renderHTML(res, req, templates.Lookup("build-failure"), http.StatusOK, RunFailure{
 				BuildLogs: err.Error(),
 				RunID:     runID,
 			})
@@ -116,7 +116,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 		err = cmd.Run()
 		if err != nil {
 			if req.Header.Get("HX-Target") == "runner" {
-				renderHTML(res, req, ts.Lookup("build-failure"), http.StatusOK, RunFailure{
+				renderHTML(res, req, templates.Lookup("build-failure"), http.StatusOK, RunFailure{
 					BuildLogs: outputBuffer.String(),
 					RunID:     runID,
 				})
@@ -153,15 +153,15 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 
 		if req.Header.Get("HX-Target") == "runner" {
 			var buf bytes.Buffer
-			if err := ts.ExecuteTemplate(&buf, "run.html.template", data); err != nil {
+			if err := templates.ExecuteTemplate(&buf, "run.html.template", data); err != nil {
 				log.Println("failed to execute index template", err)
 				http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
 			data.SourceHTMLDocument = buf.String()
-			renderHTML(res, req, ts.Lookup("run-item"), http.StatusOK, data)
+			renderHTML(res, req, templates.Lookup("run-item"), http.StatusOK, data)
 		} else {
-			renderHTML(res, req, ts.Lookup("run.html.template"), http.StatusOK, data)
+			renderHTML(res, req, templates.Lookup("run.html.template"), http.StatusOK, data)
 		}
 	}
 }
