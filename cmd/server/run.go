@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"go/parser"
 	"go/token"
@@ -36,6 +37,50 @@ type (
 	}
 )
 
+func buildWASM(ctx context.Context, env []string, goExecPath, mainGo string) ([]byte, error) {
+	tmp, err := os.MkdirTemp("", "")
+	if err != nil {
+		log.Println("failed to create temporary directory", err)
+		return nil, fmt.Errorf("failed to create temporary directory")
+	}
+	defer func() {
+		_ = os.RemoveAll(tmp)
+	}()
+
+	if err := checkImports(mainGo); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(filepath.Join(tmp, "main.go"), []byte(mainGo), 0644); err != nil {
+		return nil, fmt.Errorf("failed to write main.go: %w", err)
+	}
+	if err = os.WriteFile(filepath.Join(tmp, "go.mod"), []byte("module playground\n"), 0644); err != nil {
+		return nil, fmt.Errorf("failed to create go.mod: %w", err)
+	}
+
+	const output = "main.wasm"
+	cmd := exec.CommandContext(ctx, goExecPath,
+		"build",
+		"-o", output,
+		fmt.Sprintf("-gcflags=-trimpath=%s", tmp),
+		fmt.Sprintf("-asmflags=-trimpath=%s", tmp),
+	)
+	var outputBuffer bytes.Buffer
+	cmd.Stdout = &outputBuffer
+	cmd.Stderr = &outputBuffer
+	cmd.Env = env
+	cmd.Dir = tmp
+	err = cmd.Run()
+	if err != nil {
+		return nil, errors.New(outputBuffer.String())
+	}
+
+	mainWASM, err := os.ReadFile(filepath.Join(tmp, output))
+	if err != nil {
+		return nil, fmt.Errorf("failed to open build file: %w", err)
+	}
+	return mainWASM, nil
+}
+
 func handleRun() http.HandlerFunc {
 	goExecPath, lookUpErr := exec.LookPath("go")
 	if lookUpErr != nil {
@@ -50,7 +95,9 @@ func handleRun() http.HandlerFunc {
 	}
 
 	return func(res http.ResponseWriter, req *http.Request) {
-		req.ParseMultipartForm((1 << 10) * 8)
+		const maxReadBytes = (1 << 10) * 8
+		req.ParseMultipartForm(maxReadBytes)
+		defer closeAndIgnoreError(req.Body)
 		mainGo := req.FormValue("main.go")
 
 		var runID = 1
@@ -66,70 +113,12 @@ func handleRun() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), time.Second*30)
 		defer cancel()
 
-		tmp, err := os.MkdirTemp("", "")
+		mainWASM, err := buildWASM(ctx, env, goExecPath, mainGo)
 		if err != nil {
-			log.Println("failed to create temporary directory", err)
-			http.Error(res, "failed to create temporary directory", http.StatusInternalServerError)
-			return
-		}
-		defer func() {
-			_ = os.RemoveAll(tmp)
-		}()
-
-		defer func() {
-			_ = req.Body.Close()
-		}()
-
-		if err := checkImports(mainGo); err != nil {
-			renderHTML(res, req, templates.Lookup("build-failure"), http.StatusOK, RunFailure{
-				BuildLogs: err.Error(),
+			renderHTML(res, req, templates.Lookup("run-item"), http.StatusOK, RunFailure{
 				RunID:     runID,
+				BuildLogs: err.Error(),
 			})
-			return
-		}
-
-		err = createMainFile(tmp, mainGo)
-		if err != nil {
-			log.Println("failed to write main.go", err)
-			http.Error(res, "failed to write main.go", http.StatusInternalServerError)
-			return
-		}
-		err = createModFile(tmp)
-		if err != nil {
-			log.Println("failed to create go.mod", err)
-			http.Error(res, "failed to create go.mod", http.StatusInternalServerError)
-			return
-		}
-
-		const output = "main.wasm"
-		cmd := exec.CommandContext(ctx, goExecPath,
-			"build",
-			"-o", output,
-			fmt.Sprintf("-gcflags=-trimpath=%s", tmp),
-			fmt.Sprintf("-asmflags=-trimpath=%s", tmp),
-		)
-		var outputBuffer bytes.Buffer
-		cmd.Stdout = &outputBuffer
-		cmd.Stderr = &outputBuffer
-		cmd.Env = env
-		cmd.Dir = tmp
-		err = cmd.Run()
-		if err != nil {
-			if req.Header.Get("HX-Target") == "runner" {
-				renderHTML(res, req, templates.Lookup("build-failure"), http.StatusOK, RunFailure{
-					BuildLogs: outputBuffer.String(),
-					RunID:     runID,
-				})
-			} else {
-				http.Error(res, outputBuffer.String(), http.StatusBadRequest)
-			}
-			return
-		}
-
-		mainWASM, err := os.ReadFile(filepath.Join(tmp, output))
-		if err != nil {
-			log.Println("failed to open build file", err)
-			http.Error(res, "failed to open build file", http.StatusInternalServerError)
 			return
 		}
 
@@ -164,27 +153,6 @@ func handleRun() http.HandlerFunc {
 			renderHTML(res, req, templates.Lookup("run.html.template"), http.StatusOK, data)
 		}
 	}
-}
-
-func createMainFile(dir, mainGo string) error {
-	fp := filepath.Join(dir, "main.go")
-	return os.WriteFile(fp, []byte(mainGo), 0644)
-}
-
-func createModFile(dir string) error {
-	fp := filepath.Join(dir, "go.mod")
-	f, err := os.Create(fp)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-	_, err = f.Write([]byte("module playground\n"))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func checkImports(mainGo string) error {

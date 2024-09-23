@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -57,3 +58,5 @@ func renderHTML(res http.ResponseWriter, _ *http.Request, ts *template.Template,
 	res.WriteHeader(code)
 	_, _ = res.Write(buf.Bytes())
 }
+
+func closeAndIgnoreError(c io.Closer) { _ = c.Close() }
