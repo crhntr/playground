@@ -114,11 +114,7 @@ func handleRun() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), time.Second*30)
 		defer cancel()
 
-		hxCurrentURL := req.Header.Get("hx-current-url")
-		if hxCurrentURL == "" {
-			hxCurrentURL = "http://" + req.Host
-		}
-		currentURL, err := url.Parse(hxCurrentURL)
+		currentURL, err := url.Parse(req.Header.Get("hx-current-url"))
 		if err != nil {
 			log.Println("failed to parse current url", err)
 			http.Error(res, "failed to parse current url", http.StatusInternalServerError)
