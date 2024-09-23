@@ -22,18 +22,24 @@ import (
 	"time"
 )
 
-type Run struct {
-	Location           string
-	RunID              int
-	BinaryBase64       string
-	SourceHTMLDocument string
-	WASMExecJS         template.JS
-}
+type (
+	Run struct {
+		Location           string
+		RunID              int
+		BinaryBase64       string
+		SourceHTMLDocument string
+		WASMExecJS         template.JS
+	}
+	RunFailure struct {
+		BuildLogs string
+		RunID     int
+	}
+)
 
 func handleRun(ts *template.Template) http.HandlerFunc {
 	goExecPath, lookUpErr := exec.LookPath("go")
 	if lookUpErr != nil {
-		panic(lookUpErr)
+		log.Fatal(lookUpErr)
 	}
 
 	env := mergeEnv(os.Environ(), goEnvOverride()...)
@@ -75,10 +81,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 		}()
 
 		if err := checkImports(mainGo); err != nil {
-			renderHTML(res, req, ts, "build-failure", http.StatusOK, struct {
-				BuildLogs string
-				RunID     int
-			}{
+			renderHTML(res, req, ts.Lookup("build-failure"), http.StatusOK, RunFailure{
 				BuildLogs: err.Error(),
 				RunID:     runID,
 			})
@@ -113,10 +116,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 		err = cmd.Run()
 		if err != nil {
 			if req.Header.Get("HX-Target") == "runner" {
-				renderHTML(res, req, ts, "build-failure", http.StatusOK, struct {
-					BuildLogs string
-					RunID     int
-				}{
+				renderHTML(res, req, ts.Lookup("build-failure"), http.StatusOK, RunFailure{
 					BuildLogs: outputBuffer.String(),
 					RunID:     runID,
 				})
@@ -159,9 +159,9 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 				return
 			}
 			data.SourceHTMLDocument = buf.String()
-			renderHTML(res, req, ts, "run-item", http.StatusOK, data)
+			renderHTML(res, req, ts.Lookup("run-item"), http.StatusOK, data)
 		} else {
-			renderHTML(res, req, ts, "run.html.template", http.StatusOK, data)
+			renderHTML(res, req, ts.Lookup("run.html.template"), http.StatusOK, data)
 		}
 	}
 }

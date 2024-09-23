@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,10 +16,10 @@ import (
 
 const CopyrightNotice = "© 2021-%d Christopher Hunter"
 
-func readGoVersion(ctx context.Context) []byte {
-	goExecPath, lookUpErr := exec.LookPath("go")
-	if lookUpErr != nil {
-		panic(lookUpErr)
+func readGoVersion(ctx context.Context) ([]byte, error) {
+	goExecPath, err := exec.LookPath("go")
+	if err != nil {
+		return nil, err
 	}
 
 	env := mergeEnv(os.Environ(), goEnvOverride()...)
@@ -30,20 +32,19 @@ func readGoVersion(ctx context.Context) []byte {
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	cmd.Env = env
-	err := cmd.Run()
-	if err != nil {
-		panic(buf.String())
+	if err := cmd.Run(); err != nil {
+		return nil, errors.New(buf.String())
 	}
 	output, err := io.ReadAll(&buf)
 	if err != nil {
-		panic("failed to read command output")
+		return nil, errors.New("failed to read command output")
 	}
 	matches := re.FindSubmatch(output)
 	if len(matches) < versionMatchIndex {
-		panic("failed to read version from output")
+		return nil, errors.New("failed to read version from output")
 	}
 
-	return matches[versionMatchIndex]
+	return matches[versionMatchIndex], nil
 }
 
 func handleVersion() http.HandlerFunc {
@@ -51,7 +52,12 @@ func handleVersion() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), time.Second*2)
 		defer cancel()
 
-		version := readGoVersion(ctx)
+		version, err := readGoVersion(ctx)
+		if err != nil {
+			log.Println(err)
+			http.Error(res, "failed to read go version", http.StatusInternalServerError)
+			return
+		}
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusOK)
