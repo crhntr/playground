@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"embed"
 	"html/template"
 	"io"
@@ -25,14 +26,8 @@ func main() {
 	mux.Handle("GET /go/version", handleVersion())
 	mux.Handle("POST /go/run", handleRun())
 
-	port, ok := os.LookupEnv("PORT")
-	if !ok || port == "" {
-		port = "8080"
-	}
-	err := http.ListenAndServe(":"+port, http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		log.Println(req.Method, req.URL)
-		mux.ServeHTTP(res, req)
-	}))
+	addr := ":" + cmp.Or(os.Getenv("PORT"), "8080")
+	err := http.ListenAndServe(addr, mux)
 	if err != nil {
 		panic(err)
 	}

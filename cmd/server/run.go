@@ -37,24 +37,24 @@ type (
 	}
 )
 
-func buildWASM(ctx context.Context, env []string, goExecPath, mainGo string) ([]byte, error) {
+func buildWASM(ctx context.Context, env []string, goExecPath, mainGo string) (string, error) {
 	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		log.Println("failed to create temporary directory", err)
-		return nil, fmt.Errorf("failed to create temporary directory")
+		return "", fmt.Errorf("failed to create temporary directory")
 	}
 	defer func() {
 		_ = os.RemoveAll(tmp)
 	}()
 
 	if err := checkImports(mainGo); err != nil {
-		return nil, err
+		return "", err
 	}
 	if err := os.WriteFile(filepath.Join(tmp, "main.go"), []byte(mainGo), 0644); err != nil {
-		return nil, fmt.Errorf("failed to write main.go: %w", err)
+		return "", fmt.Errorf("failed to write main.go: %w", err)
 	}
 	if err = os.WriteFile(filepath.Join(tmp, "go.mod"), []byte("module playground\n"), 0644); err != nil {
-		return nil, fmt.Errorf("failed to create go.mod: %w", err)
+		return "", fmt.Errorf("failed to create go.mod: %w", err)
 	}
 
 	const output = "main.wasm"
@@ -71,14 +71,15 @@ func buildWASM(ctx context.Context, env []string, goExecPath, mainGo string) ([]
 	cmd.Dir = tmp
 	err = cmd.Run()
 	if err != nil {
-		return nil, errors.New(outputBuffer.String())
+		return "", errors.New(outputBuffer.String())
 	}
 
-	mainWASM, err := os.ReadFile(filepath.Join(tmp, output))
+	wasmBuild, err := os.ReadFile(filepath.Join(tmp, output))
 	if err != nil {
-		return nil, fmt.Errorf("failed to open build file: %w", err)
+		return "", fmt.Errorf("failed to open build file: %w", err)
 	}
-	return mainWASM, nil
+	encodedBuild := base64.StdEncoding.EncodeToString(wasmBuild)
+	return encodedBuild, nil
 }
 
 func handleRun() http.HandlerFunc {
@@ -113,15 +114,6 @@ func handleRun() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), time.Second*30)
 		defer cancel()
 
-		mainWASM, err := buildWASM(ctx, env, goExecPath, mainGo)
-		if err != nil {
-			renderHTML(res, req, templates.Lookup("run-item"), http.StatusOK, RunFailure{
-				RunID:     runID,
-				BuildLogs: err.Error(),
-			})
-			return
-		}
-
 		hxCurrentURL := req.Header.Get("hx-current-url")
 		if hxCurrentURL == "" {
 			hxCurrentURL = "http://" + req.Host
@@ -133,10 +125,19 @@ func handleRun() http.HandlerFunc {
 			return
 		}
 
+		buildBase64, err := buildWASM(ctx, env, goExecPath, mainGo)
+		if err != nil {
+			renderHTML(res, req, templates.Lookup("run-item"), http.StatusOK, RunFailure{
+				RunID:     runID,
+				BuildLogs: err.Error(),
+			})
+			return
+		}
+
 		data := Run{
 			Location:     fmt.Sprintf("%s://%s", currentURL.Scheme, currentURL.Host),
 			RunID:        runID,
-			BinaryBase64: base64.StdEncoding.EncodeToString(mainWASM),
+			BinaryBase64: buildBase64,
 			WASMExecJS:   template.JS(wasmExecJS),
 		}
 
