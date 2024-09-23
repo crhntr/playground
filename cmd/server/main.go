@@ -48,6 +48,13 @@ func main() {
 	}
 }
 
+type Index struct {
+	CopyrightNotice, GoVersion string
+	Examples                   []Example
+	Name                       string
+	MainGo                     string
+}
+
 func handleIndexPage(ts *template.Template) func(res http.ResponseWriter, req *http.Request) {
 	const defaultExampleName = "hello-world"
 
@@ -73,12 +80,7 @@ func handleIndexPage(ts *template.Template) func(res http.ResponseWriter, req *h
 	}
 
 	return func(res http.ResponseWriter, req *http.Request) {
-		data := struct {
-			CopyrightNotice, GoVersion string
-			Examples                   []Example
-			Name                       string
-			MainGo                     string
-		}{
+		data := Index{
 			CopyrightNotice: fmt.Sprintf(CopyrightNotice, time.Now().Year()),
 			GoVersion:       string(readGoVersion(req.Context())),
 			Examples:        slices.Clone(examples),

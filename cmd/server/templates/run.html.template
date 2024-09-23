@@ -18,6 +18,7 @@
   </div>
 {{end -}}
 
+{{- /* gotype: github.com/crhntr/playground/cmd/server.Run */ -}}
 <!DOCTYPE html>
 <html lang="us-en">
 <head>

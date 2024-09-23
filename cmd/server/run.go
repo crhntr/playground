@@ -22,6 +22,14 @@ import (
 	"time"
 )
 
+type Run struct {
+	Location           string
+	RunID              int
+	BinaryBase64       string
+	SourceHTMLDocument string
+	WASMExecJS         template.JS
+}
+
 func handleRun(ts *template.Template) http.HandlerFunc {
 	goExecPath, lookUpErr := exec.LookPath("go")
 	if lookUpErr != nil {
@@ -136,13 +144,7 @@ func handleRun(ts *template.Template) http.HandlerFunc {
 			return
 		}
 
-		data := struct {
-			Location           string
-			RunID              int
-			BinaryBase64       string
-			SourceHTMLDocument string
-			WASMExecJS         template.JS
-		}{
+		data := Run{
 			Location:     fmt.Sprintf("%s://%s", currentURL.Scheme, currentURL.Host),
 			RunID:        runID,
 			BinaryBase64: base64.StdEncoding.EncodeToString(mainWASM),
