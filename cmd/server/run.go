@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	_ "embed"
@@ -90,6 +91,34 @@ func buildWASM(ctx context.Context, env []string, goExecPath string, archive *tx
 	return encodedBuild, nil
 }
 
+func handleDownload(res http.ResponseWriter, req *http.Request) {
+	const maxReadBytes = (1 << 10) * 8
+	req.ParseMultipartForm(maxReadBytes)
+	defer closeAndIgnoreError(req.Body)
+	archive, err := readArchive(req.Form)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	dir, err := txtar.FS(archive)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var buf bytes.Buffer
+	output := zip.NewWriter(&buf)
+	if err = output.AddFS(dir); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	output.Flush()
+	output.Close()
+	res.Header().Set("Content-Disposition", "attachment")
+	res.Header().Set("Content-Type", "application/zip")
+	http.ServeContent(res, req, "playground.zip", time.Time{}, bytes.NewReader(buf.Bytes()))
+
+}
+
 func handleRun() http.HandlerFunc {
 	goExecPath, lookUpErr := exec.LookPath("go")
 	if lookUpErr != nil {
@@ -107,13 +136,10 @@ func handleRun() http.HandlerFunc {
 		const maxReadBytes = (1 << 10) * 8
 		req.ParseMultipartForm(maxReadBytes)
 		defer closeAndIgnoreError(req.Body)
-		filenames := req.Form["filename"]
-		archive := &txtar.Archive{Files: make([]txtar.File, 0, len(filenames))}
-		for _, filename := range filenames {
-			archive.Files = append(archive.Files, txtar.File{
-				Name: filename,
-				Data: []byte(req.Form.Get(filename)),
-			})
+		archive, err := readArchive(req.Form)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
 		}
 		var runID = 1
 		if runIDQuery := req.FormValue("run-id"); runIDQuery != "" {
@@ -190,4 +216,16 @@ var permittedPackagesString string
 func permittedPackages() []string {
 	list := strings.Split(permittedPackagesString, "\n")
 	return list
+}
+
+func readArchive(form url.Values) (*txtar.Archive, error) {
+	filenames := form["filename"]
+	archive := &txtar.Archive{Files: make([]txtar.File, 0, len(filenames))}
+	for _, filename := range filenames {
+		archive.Files = append(archive.Files, txtar.File{
+			Name: filename,
+			Data: []byte(form.Get(filename)),
+		})
+	}
+	return archive, nil
 }

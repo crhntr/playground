@@ -21,10 +21,11 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /assets/", http.FileServer(http.FS(assets)))
-	mux.HandleFunc("GET /", handleIndexPage())
+	mux.Handle("GET /", handleIndexPage())
 
 	mux.Handle("GET /go/version", handleVersion())
 	mux.Handle("POST /go/run", handleRun())
+	mux.HandleFunc("POST /download", handleDownload)
 
 	addr := ":" + cmp.Or(os.Getenv("PORT"), "8080")
 	err := http.ListenAndServe(addr, mux)

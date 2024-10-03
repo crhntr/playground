@@ -46,7 +46,7 @@
 
 <main>
   {{block "editor" . -}}
-    <form hx-post="/go/run" hx-target="#runner" hx-swap="innerHTML" id="editor" hx-indicator="#run">
+    <form id="editor" hx-indicator="#run" method="POST" action="/download">
       {{range .Archive.Files -}}
         {{- if eq .Name "main.go"}}
           <details open>
@@ -62,7 +62,8 @@
       {{- end}}
 
       <div id="run">
-        <button id="run-trigger" type="submit" >Run</button>
+        <button id="run-trigger" type="submit" hx-post="/go/run" hx-target="#runner" hx-swap="innerHTML">Run</button>
+        <button id="run-trigger" type="submit">Download</button>
         <div id="runner"></div>
         <p id="loading-message">Your app is being built.</p>
       </div>

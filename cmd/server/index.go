@@ -26,7 +26,7 @@ type Example struct {
 	Name string
 }
 
-func handleIndexPage() func(res http.ResponseWriter, req *http.Request) {
+func handleIndexPage() http.HandlerFunc {
 	const defaultExampleName = "hello-world"
 
 	exampleDirectories, err := fs.Glob(assets, "assets/examples/*.txtar")
