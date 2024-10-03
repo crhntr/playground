@@ -1,0 +1,20 @@
+-- body.html --
+<h1>Hello, world!</h1>
+-- go.mod --
+module playground
+-- main.go --
+//go:build js
+
+package main
+
+import (
+	_ "embed"
+	"syscall/js"
+)
+
+//go:embed body.html
+var bodyHTML string
+
+func main() {
+	js.Global().Get("document").Call("querySelector", "body").Set("innerHTML", bodyHTML)
+}
