@@ -64,6 +64,7 @@
       <div id="run">
         <button id="run-trigger" type="submit" hx-post="/go/run" hx-target="#runner" hx-swap="innerHTML">Run</button>
         <button id="run-trigger" type="submit">Download</button>
+        <button id="go-mod-tidy" type="button" title='go mod tidy' hx-target='#editor' hx-post='/go/mod/tidy' hx-include='#editor'>Tidy Module</button>
         <div id="runner"></div>
         <p id="loading-message">Your app is being built.</p>
       </div>

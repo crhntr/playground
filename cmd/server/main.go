@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"strconv"
 	"strings"
@@ -35,6 +36,10 @@ func main() {
 	for _, dir := range exampleDirectories {
 		examples = append(examples, Example{Name: strings.TrimSuffix(path.Base(dir), ".txtar")})
 	}
+	goExecPath, err := exec.LookPath("go")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	mux := http.NewServeMux()
 
@@ -42,7 +47,8 @@ func main() {
 	mux.Handle("GET /", handleIndexPage(goVersion, examples))
 
 	mux.Handle("GET /go/version", handleVersion(goVersion))
-	mux.Handle("POST /go/run", handleRun())
+	mux.Handle("POST /go/run", handleRun(goExecPath))
+	mux.Handle("POST /go/mod/tidy", handleModTidy(goExecPath))
 	mux.HandleFunc("POST /download", handleDownload)
 
 	mux.HandleFunc("GET /upload", handleGETInstall(goVersion))

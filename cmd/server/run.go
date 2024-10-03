@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/txtar"
 )
 
@@ -42,42 +43,25 @@ type (
 )
 
 func buildWASM(ctx context.Context, env []string, goExecPath string, archive *txtar.Archive) (string, error) {
-	tmp, err := os.MkdirTemp("", "")
+	tmp, err := writeDirectory(archive)
 	if err != nil {
-		log.Println("failed to create temporary directory", err)
-		return "", fmt.Errorf("failed to create temporary directory")
+		return "", err
 	}
 	defer func() {
 		_ = os.RemoveAll(tmp)
 	}()
-
-	for _, file := range archive.Files {
-		if path.Ext(file.Name) != ".go" {
-			continue
-		}
-		if err := checkImports(string(file.Data)); err != nil {
-			return "", fmt.Errorf("failed in %s: %w", file.Name, err)
-		}
-	}
-	dir, err := txtar.FS(archive)
-	if err != nil {
-		return "", err
-	}
-	if err := os.CopyFS(tmp, dir); err != nil {
-		return "", err
-	}
+	var outputBuffer bytes.Buffer
 	const output = "main.wasm"
-	cmd := exec.CommandContext(ctx, goExecPath,
+	buildArgs := []string{
 		"build",
 		"-o", output,
-		fmt.Sprintf("-gcflags=-trimpath=%s", tmp),
-		fmt.Sprintf("-asmflags=-trimpath=%s", tmp),
-	)
-	var outputBuffer bytes.Buffer
+	}
+	cmd := exec.CommandContext(ctx, goExecPath, append(buildArgs, fmt.Sprintf("-gcflags=-trimpath=%s", tmp), fmt.Sprintf("-asmflags=-trimpath=%s", tmp))...)
 	cmd.Stdout = &outputBuffer
 	cmd.Stderr = &outputBuffer
 	cmd.Env = env
 	cmd.Dir = tmp
+	outputBuffer.WriteString("$ " + strings.Join(append([]string{path.Base(cmd.Path)}, buildArgs...), " "))
 	err = cmd.Run()
 	if err != nil {
 		return "", errors.New(outputBuffer.String())
@@ -89,6 +73,53 @@ func buildWASM(ctx context.Context, env []string, goExecPath string, archive *tx
 	}
 	encodedBuild := base64.StdEncoding.EncodeToString(wasmBuild)
 	return encodedBuild, nil
+}
+
+func writeDirectory(archive *txtar.Archive) (string, error) {
+	tmp, err := os.MkdirTemp("", "")
+	if err != nil {
+		log.Println("failed to create temporary directory", err)
+		return "", fmt.Errorf("failed to create temporary directory")
+	}
+
+	for _, file := range archive.Files {
+		if path.Base(file.Name) == "go.mod" {
+			if err := checkModules(file); err != nil {
+				_ = os.RemoveAll(tmp)
+				return "", fmt.Errorf("failed in %s: %w", file.Name, err)
+			}
+			continue
+		}
+		switch path.Ext(file.Name) {
+		case ".go":
+			if err := checkImports(string(file.Data)); err != nil {
+				_ = os.RemoveAll(tmp)
+				return "", fmt.Errorf("failed in %s: %w", file.Name, err)
+			}
+		}
+	}
+	dir, err := txtar.FS(archive)
+	if err != nil {
+		_ = os.RemoveAll(tmp)
+		return "", err
+	}
+	if err := os.CopyFS(tmp, dir); err != nil {
+		_ = os.RemoveAll(tmp)
+		return "", err
+	}
+	return tmp, nil
+}
+
+func readDirectory(tmp string, archive *txtar.Archive) error {
+	for i, file := range archive.Files {
+		p := filepath.Join(tmp, filepath.FromSlash(file.Name))
+		buf, err := os.ReadFile(p)
+		if err != nil {
+			return fmt.Errorf("failed to read: %s", file.Name)
+		}
+		archive.Files[i].Data = buf
+	}
+	return nil
 }
 
 func handleDownload(res http.ResponseWriter, req *http.Request) {
@@ -118,12 +149,7 @@ func handleDownload(res http.ResponseWriter, req *http.Request) {
 	http.ServeContent(res, req, "playground.zip", time.Time{}, bytes.NewReader(buf.Bytes()))
 }
 
-func handleRun() http.HandlerFunc {
-	goExecPath, lookUpErr := exec.LookPath("go")
-	if lookUpErr != nil {
-		log.Fatal(lookUpErr)
-	}
-
+func handleRun(goExecPath string) http.HandlerFunc {
 	env := mergeEnv(os.Environ(), goEnvOverride()...)
 
 	wasmExecJS, err := fs.ReadFile(assets, "assets/lib/wasm_exec.js")
@@ -191,21 +217,52 @@ func handleRun() http.HandlerFunc {
 	}
 }
 
+//go:embed assets/module_allow_list.txt
+var permittedModulesString string
+
+func checkModules(file txtar.File) error {
+	module, err := modfile.Parse(file.Name, file.Data, nil)
+	if err != nil {
+		return err
+	}
+	allowed := strings.Split(permittedModulesString, "\n")
+	allowed = slices.DeleteFunc(allowed, func(s string) bool {
+		return s == ""
+	})
+	for _, requirement := range module.Require {
+		if requirement.Indirect {
+			continue
+		}
+		if !slices.Contains(allowed, requirement.Mod.Path) {
+			return fmt.Errorf("module %s not permitted", requirement.Mod.Path)
+		}
+	}
+	return nil
+}
+
 func checkImports(mainGo string) error {
 	var fileSet token.FileSet
 	file, err := parser.ParseFile(&fileSet, "main.go", mainGo, parser.ImportsOnly)
 	if err != nil {
 		return fmt.Errorf("failed to parse main.go: %w", err)
 	}
+	allowedModules := strings.Split(permittedModulesString, "\n")
+	allowedModules = slices.DeleteFunc(allowedModules, func(s string) bool {
+		return s == ""
+	})
 
 	for _, spec := range file.Imports {
-		path, _ := strconv.Unquote(spec.Path.Value)
-		if slices.Index(permittedPackages(), path) >= 0 {
+		pkgPath, _ := strconv.Unquote(spec.Path.Value)
+		if slices.Index(permittedPackages(), pkgPath) >= 0 {
 			continue
 		}
-		return fmt.Errorf("importing %q is not permitted on this site", path)
+		if slices.ContainsFunc(allowedModules, func(modName string) bool {
+			return strings.HasPrefix(pkgPath, modName+"/")
+		}) {
+			continue
+		}
+		return fmt.Errorf("package %q not permitted", pkgPath)
 	}
-
 	return nil
 }
 

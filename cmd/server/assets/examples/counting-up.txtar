@@ -1,5 +1,6 @@
 -- go.mod --
 module playground
+-- go.sum --
 -- main.go --
 package main
 

@@ -1,5 +1,6 @@
 -- body.html --
 <h1>Hello, world!</h1>
+-- go.sum --
 -- go.mod --
 module playground
 -- main.go --
