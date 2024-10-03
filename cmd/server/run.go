@@ -16,11 +16,14 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/tools/txtar"
 )
 
 type (
@@ -37,7 +40,7 @@ type (
 	}
 )
 
-func buildWASM(ctx context.Context, env []string, goExecPath, mainGo string) (string, error) {
+func buildWASM(ctx context.Context, env []string, goExecPath string, archive *txtar.Archive) (string, error) {
 	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		log.Println("failed to create temporary directory", err)
@@ -47,16 +50,21 @@ func buildWASM(ctx context.Context, env []string, goExecPath, mainGo string) (st
 		_ = os.RemoveAll(tmp)
 	}()
 
-	if err := checkImports(mainGo); err != nil {
+	for _, file := range archive.Files {
+		if path.Ext(file.Name) != ".go" {
+			continue
+		}
+		if err := checkImports(string(file.Data)); err != nil {
+			return "", fmt.Errorf("failed in %s: %w", file.Name, err)
+		}
+	}
+	dir, err := txtar.FS(archive)
+	if err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(filepath.Join(tmp, "main.go"), []byte(mainGo), 0644); err != nil {
-		return "", fmt.Errorf("failed to write main.go: %w", err)
+	if err := os.CopyFS(tmp, dir); err != nil {
+		return "", err
 	}
-	if err = os.WriteFile(filepath.Join(tmp, "go.mod"), []byte("module playground\n"), 0644); err != nil {
-		return "", fmt.Errorf("failed to create go.mod: %w", err)
-	}
-
 	const output = "main.wasm"
 	cmd := exec.CommandContext(ctx, goExecPath,
 		"build",
@@ -99,8 +107,14 @@ func handleRun() http.HandlerFunc {
 		const maxReadBytes = (1 << 10) * 8
 		req.ParseMultipartForm(maxReadBytes)
 		defer closeAndIgnoreError(req.Body)
-		mainGo := req.FormValue("main.go")
-
+		filenames := req.Form["filename"]
+		archive := &txtar.Archive{Files: make([]txtar.File, 0, len(filenames))}
+		for _, filename := range filenames {
+			archive.Files = append(archive.Files, txtar.File{
+				Name: filename,
+				Data: []byte(req.Form.Get(filename)),
+			})
+		}
 		var runID = 1
 		if runIDQuery := req.FormValue("run-id"); runIDQuery != "" {
 			var err error
@@ -121,7 +135,7 @@ func handleRun() http.HandlerFunc {
 			return
 		}
 
-		buildBase64, err := buildWASM(ctx, env, goExecPath, mainGo)
+		buildBase64, err := buildWASM(ctx, env, goExecPath, archive)
 		if err != nil {
 			renderHTML(res, req, templates.Lookup("run-item"), http.StatusOK, RunFailure{
 				RunID:     runID,

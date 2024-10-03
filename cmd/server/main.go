@@ -37,7 +37,9 @@ var (
 	//go:embed templates
 	templateSource embed.FS
 
-	templates = template.Must(template.New("").ParseFS(templateSource, "templates/*.template"))
+	templates = template.Must(template.New("").Funcs(template.FuncMap{
+		"bytesToString": func(in []byte) string { return string(in) },
+	}).ParseFS(templateSource, "templates/*.template"))
 )
 
 func renderHTML(res http.ResponseWriter, _ *http.Request, ts *template.Template, code int, data any) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"io/fs"
@@ -10,13 +11,15 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"golang.org/x/tools/txtar"
 )
 
 type Index struct {
 	CopyrightNotice, GoVersion string
 	Examples                   []Example
 	Name                       string
-	MainGo                     string
+	Archive                    *txtar.Archive
 }
 
 type Example struct {
@@ -26,25 +29,13 @@ type Example struct {
 func handleIndexPage() func(res http.ResponseWriter, req *http.Request) {
 	const defaultExampleName = "hello-world"
 
-	exampleDirectories, err := fs.ReadDir(assets, "assets/examples")
+	exampleDirectories, err := fs.Glob(assets, "assets/examples/*.txtar")
 	if err != nil {
 		log.Fatal(err)
 	}
 	examples := make([]Example, 0, len(exampleDirectories))
-	var defaultExampleMainGo string
 	for _, dir := range exampleDirectories {
-		examples = append(examples, Example{Name: dir.Name()})
-
-		if dir.Name() == defaultExampleName {
-			buf, err := fs.ReadFile(assets, path.Join("assets/examples", defaultExampleName, "main.go"))
-			if err != nil {
-				log.Fatal(err)
-			}
-			defaultExampleMainGo = string(buf)
-		}
-	}
-	if defaultExampleMainGo == "" {
-		log.Fatalf("failed to read main.go for default example %q", defaultExampleName)
+		examples = append(examples, Example{Name: strings.TrimSuffix(path.Base(dir), ".txtar")})
 	}
 
 	goVersion, err := readGoVersion(context.Background())
@@ -57,26 +48,25 @@ func handleIndexPage() func(res http.ResponseWriter, req *http.Request) {
 			CopyrightNotice: fmt.Sprintf(CopyrightNotice, time.Now().Year()),
 			GoVersion:       string(goVersion),
 			Examples:        slices.Clone(examples),
-			MainGo:          defaultExampleMainGo,
 			Name:            defaultExampleName,
 		}
 
 		if q := req.URL.Query(); q.Has("example") {
-			exampleQuery := strings.TrimSpace(q.Get("example"))
+			data.Name = cmp.Or(strings.TrimSpace(q.Get("example")), defaultExampleName)
+		}
+		if data.Name != "" {
 			if index := slices.IndexFunc(data.Examples, func(e Example) bool {
-				return e.Name == exampleQuery
+				return e.Name == data.Name
 			}); index >= 0 && index < len(data.Examples) {
-				buf, err := fs.ReadFile(assets, path.Join("assets/examples", exampleQuery, "main.go"))
+				buf, err := fs.ReadFile(assets, path.Join("assets/examples", data.Name+".txtar"))
 				if err != nil {
 					log.Println("failed to read example", err)
 					http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				data.MainGo = string(buf)
-				data.Name = exampleQuery
+				data.Archive = txtar.Parse(buf)
 			}
 		}
-
 		renderHTML(res, req, templates.Lookup("index.html.template"), http.StatusOK, data)
 	}
 }

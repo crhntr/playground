@@ -47,18 +47,22 @@
 <main>
   {{block "editor" . -}}
     <form hx-post="/go/run" hx-target="#runner" hx-swap="innerHTML" id="editor" hx-indicator="#run">
-      <div>
+      {{range $file := .Archive.Files -}}
+      <details>
+        <summary>{{$file.Name}}</summary>
         <textarea
                 id="code"
-                name="main.go"
+                name="{{$file.Name}}"
                 spellcheck="false"
                 autofocus
                 autocomplete="off"
                 autocapitalize="off"
                 wrap="off"
-                aria-label="main.go"
-        >{{.MainGo}}</textarea>
-      </div>
+                aria-label="{{$file.Name}}"
+        >{{$file.Data | bytesToString}}</textarea>
+        <input name="filename" value="{{$file.Name}}" type='hidden'>
+      </details>
+      {{- end}}
 
       <div id="run">
         <button id="run-trigger" type="submit" >Run</button>

@@ -1,3 +1,6 @@
+-- go.mod --
+module playground
+-- main.go --
 package main
 
 import (
