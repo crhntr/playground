@@ -161,7 +161,7 @@ func isPermittedFile(in string) bool {
 		return true
 	}
 	switch strings.ToLower(path.Ext(in)) {
-	case ".go", ".mod", ".html", ".gohtml", ".md", ".txt", ".json", ".yml", ".yaml", ".tmpl":
+	case ".go", ".mod", ".html", ".gohtml", ".md", ".txt", ".json", ".yml", ".yaml", ".tmpl", ".css":
 		return true
 	}
 	return false
