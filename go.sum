@@ -1,3 +1,5 @@
+github.com/crhntr/txtarfmt v0.0.1 h1:HApI3rmx0hVmOPi74q88khodaUDVSx3hALhl9CAnFO4=
+github.com/crhntr/txtarfmt v0.0.1/go.mod h1:ka0d+RI9acV69UnjRleQcd56E1tB8f/pkVclSaDTNS8=
 golang.org/x/mod v0.21.0 h1:vvrHzRwRfVKSiLrG+d4FMl/Qi4ukBCE6kZlTUkDYRT0=
 golang.org/x/mod v0.21.0/go.mod h1:6SkKJ3Xj0I0BrPOZoBy3bdMptDDU9oJrpohJ3eWZ1fY=
 golang.org/x/tools v0.25.0 h1:oFU9pkj/iJgs+0DT+VMHrx+oBKs/LJMV+Uvg78sl+fE=
