@@ -3,13 +3,17 @@ package main
 import (
 	"bytes"
 	"cmp"
+	"context"
 	"embed"
 	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -18,18 +22,34 @@ var (
 )
 
 func main() {
+	gv, err := readGoVersion(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	goVersion := string(gv)
+	exampleDirectories, err := fs.Glob(assets, "assets/examples/*.txtar")
+	if err != nil {
+		log.Fatal(err)
+	}
+	examples := make([]Example, 0, len(exampleDirectories))
+	for _, dir := range exampleDirectories {
+		examples = append(examples, Example{Name: strings.TrimSuffix(path.Base(dir), ".txtar")})
+	}
+
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /assets/", http.FileServer(http.FS(assets)))
-	mux.Handle("GET /", handleIndexPage())
+	mux.Handle("GET /", handleIndexPage(goVersion, examples))
 
-	mux.Handle("GET /go/version", handleVersion())
+	mux.Handle("GET /go/version", handleVersion(goVersion))
 	mux.Handle("POST /go/run", handleRun())
 	mux.HandleFunc("POST /download", handleDownload)
 
+	mux.HandleFunc("GET /upload", handleGETInstall(goVersion))
+	mux.HandleFunc("POST /upload", handlePOSTInstall(goVersion, examples))
+
 	addr := ":" + cmp.Or(os.Getenv("PORT"), "8080")
-	err := http.ListenAndServe(addr, mux)
-	if err != nil {
+	if err := http.ListenAndServe(addr, mux); err != nil {
 		panic(err)
 	}
 }

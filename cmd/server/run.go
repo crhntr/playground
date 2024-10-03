@@ -116,7 +116,6 @@ func handleDownload(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Disposition", "attachment")
 	res.Header().Set("Content-Type", "application/zip")
 	http.ServeContent(res, req, "playground.zip", time.Time{}, bytes.NewReader(buf.Bytes()))
-
 }
 
 func handleRun() http.HandlerFunc {

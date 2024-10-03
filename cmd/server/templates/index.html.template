@@ -70,10 +70,12 @@
     </form>
   {{- end}}
 </main>
+{{block "footer" .}}
 <footer class="dark">
   <p id="go-version">Using Go {{.GoVersion}}</p>
   <p id="copyright-notice">{{.CopyrightNotice}}</p>
 </footer>
+{{end}}
 </body>
 </html>
 

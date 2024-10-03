@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="us-en">
+<head>
+	<title>Upload</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link rel="stylesheet" type="text/css" href="/assets/main.css">
+</head>
+<body>
+<header>
+	<div class="page-name">Playground</div>
+	<div>
+		<a href="https://github.com/crhntr/playground" target="_blank">Source Code</a>
+	</div>
+</header>
+<main>
+	<form method='POST' action='/upload' enctype='multipart/form-data'>
+		<input type='file' name='zip'>
+		<button type='submit' id='zip-upload'>Upload</button>
+	</form>
+</main>
+{{template "footer" .}}
+</body>
+</html>
+

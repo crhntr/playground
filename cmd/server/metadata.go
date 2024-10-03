@@ -5,13 +5,11 @@ import (
 	"context"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
-	"time"
 )
 
 const CopyrightNotice = "© 2021-%d Christopher Hunter"
@@ -47,21 +45,11 @@ func readGoVersion(ctx context.Context) ([]byte, error) {
 	return matches[versionMatchIndex], nil
 }
 
-func handleVersion() http.HandlerFunc {
+func handleVersion(goVersion string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		ctx, cancel := context.WithTimeout(req.Context(), time.Second*2)
-		defer cancel()
-
-		version, err := readGoVersion(ctx)
-		if err != nil {
-			log.Println(err)
-			http.Error(res, "failed to read go version", http.StatusInternalServerError)
-			return
-		}
-
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusOK)
-		res.Write(version)
+		res.Write([]byte(goVersion))
 	}
 }
 
