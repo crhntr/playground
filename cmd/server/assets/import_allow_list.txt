@@ -5,6 +5,7 @@ bytes
 cmp
 compress/gzip
 context
+embed
 errors
 fmt
 go/ast

@@ -47,21 +47,18 @@
 <main>
   {{block "editor" . -}}
     <form hx-post="/go/run" hx-target="#runner" hx-swap="innerHTML" id="editor" hx-indicator="#run">
-      {{range $file := .Archive.Files -}}
-      <details>
-        <summary>{{$file.Name}}</summary>
-        <textarea
-                id="code"
-                name="{{$file.Name}}"
-                spellcheck="false"
-                autofocus
-                autocomplete="off"
-                autocapitalize="off"
-                wrap="off"
-                aria-label="{{$file.Name}}"
-        >{{$file.Data | bytesToString}}</textarea>
-        <input name="filename" value="{{$file.Name}}" type='hidden'>
-      </details>
+      {{range .Archive.Files -}}
+        {{- if eq .Name "main.go"}}
+          <details open>
+            <summary>{{.Name}}</summary>
+            {{template "editor-textarea" .}}
+          </details>
+        {{else}}
+          <details>
+            <summary>{{.Name}}</summary>
+            {{template "editor-textarea" .}}
+          </details>
+        {{end}}
       {{- end}}
 
       <div id="run">
@@ -78,3 +75,17 @@
 </footer>
 </body>
 </html>
+
+{{define "editor-textarea" }}
+  <textarea
+          id="code"
+          name="{{.Name}}"
+          spellcheck="false"
+          autofocus
+          autocomplete="off"
+          autocapitalize="off"
+          wrap="off"
+          aria-label="{{.Name}}"
+  >{{.Data | bytesToString}}</textarea>
+  <input name="filename" value="{{.Name}}" type='hidden'>
+{{end}}

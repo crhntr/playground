@@ -137,7 +137,7 @@ func handleRun() http.HandlerFunc {
 
 		buildBase64, err := buildWASM(ctx, env, goExecPath, archive)
 		if err != nil {
-			renderHTML(res, req, templates.Lookup("run-item"), http.StatusOK, RunFailure{
+			renderHTML(res, req, templates.Lookup("build-failure"), http.StatusOK, RunFailure{
 				RunID:     runID,
 				BuildLogs: err.Error(),
 			})
