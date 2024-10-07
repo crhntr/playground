@@ -51,7 +51,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		get := exec.Command("go", "get", "-u", "./...")
+		get := exec.Command("go", "get", "-u", fmt.Sprintf(".%c...", filepath.Separator))
 		get.Dir = tmpDir
 		fmt.Println(get.Args)
 		get.Stderr = os.Stdout
