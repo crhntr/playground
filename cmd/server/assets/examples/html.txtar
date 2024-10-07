@@ -3,6 +3,8 @@
 -- go.sum --
 -- go.mod --
 module playground
+
+go 1.23.2
 -- main.go --
 //go:build js
 
