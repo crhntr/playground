@@ -23,7 +23,6 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
 
 	"github.com/crhntr/dom/browser"
 )
@@ -34,5 +33,5 @@ var bodyHTML string
 func main() {
 	document := browser.OpenDocument()
 	body := document.Body()
-	head.SetInnerHTML(bodyHTML)
+	body.SetInnerHTML(bodyHTML)
 }

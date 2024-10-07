@@ -69,6 +69,16 @@ func main() {
 			log.Fatal(err)
 		}
 
+		build := exec.Command("go", "build", "-v", ".")
+		build.Env = append([]string{"GOOS=js", "GOARCH=wasm"}, build.Environ()...)
+		build.Dir = tmpDir
+		fmt.Println(build.Args)
+		build.Stderr = os.Stdout
+		build.Stdout = os.Stdout
+		if err := build.Run(); err != nil {
+			log.Fatal(err)
+		}
+
 		for i, file := range archive.Files {
 			updated, err := os.ReadFile(filepath.Join(tmpDir, filepath.FromSlash(file.Name)))
 			if err != nil {
