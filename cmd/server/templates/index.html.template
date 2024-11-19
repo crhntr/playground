@@ -5,7 +5,7 @@
   <title>{{if .Name}}{{.Name}} | {{end}}Playground</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="/assets/lib/htmx.js" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+  <script src="/assets/lib/htmx.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" type="text/css" href="/assets/main.css">
   <script>
     function eventIframe(event) {
