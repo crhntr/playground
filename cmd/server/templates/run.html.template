@@ -1,6 +1,6 @@
 {{- define "run-item"}}
   <div class="run" data-run-id="{{.RunID}}">
-    <button class="close" hx-on="click: this.closest('.run').remove()">x</button>
+    <button type="button" class="close" hx-on="click: this.closest('.run').remove()">x</button>
     <iframe
             class="run"
             srcdoc="{{.SourceHTMLDocument}}"
