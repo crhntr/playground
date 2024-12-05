@@ -7,6 +7,12 @@ domains:
   - domain: playground.crhntr.com
     type: ALIAS
     zone: crhntr.com
+  - domain: play.cazador.codes
+    type: PRIMARY
+    zone: cazador.codes
+  - domain: play.crhntr.com
+    type: ALIAS
+    zone: crhntr.com
 ingress:
   rules:
     - component:
