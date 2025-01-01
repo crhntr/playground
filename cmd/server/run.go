@@ -154,7 +154,15 @@ func handleRun(goExecPath string) http.HandlerFunc {
 
 	wasmExecJS, err := fs.ReadFile(assets, "assets/lib/wasm_exec.js")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		fs.WalkDir(assets, ".", func(path string, d fs.DirEntry, err error) error {
+			if d.IsDir() || err != nil {
+				return err
+			}
+			fmt.Println("found: ", path)
+			return nil
+		})
+		os.Exit(0)
 	}
 
 	return func(res http.ResponseWriter, req *http.Request) {
