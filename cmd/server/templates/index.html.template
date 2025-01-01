@@ -84,19 +84,12 @@
 <main>
     {{block "editor" . -}}
 		<form id="editor" hx-indicator="#run" method="POST" action="/download">
-            {{range .Archive.Files -}}
-                {{- if eq .Name "main.go"}}
-					<details open>
-						<summary>{{.Name}}</summary>
-                        {{template "editor-textarea" .}}
-					</details>
-                {{else}}
-					<details>
-						<summary>{{.Name}}</summary>
-                        {{template "editor-textarea" .}}
-					</details>
-                {{end}}
-            {{- end}}
+            {{- range .Archive.Files -}}
+	            <details open>
+		            <summary>{{.Name}}</summary>
+                {{template "editor-textarea" .}}
+	            </details>
+            {{- end -}}
 
 			<div id="run">
 				<div>
