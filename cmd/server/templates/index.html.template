@@ -24,6 +24,13 @@
                 return iframe.contentWindow === event.source;
             })[0]
         }
+        
+        function editorMode(fileName) {
+            if (fileName.endsWith(".go")) {
+                return 'go'
+            }
+            return "null"
+        }
 
         function load() {
             document.querySelectorAll('.CodeMirror').forEach(function (el) {
@@ -33,7 +40,7 @@
                 const name = textarea.getAttribute('name')
                 const mirror = CodeMirror.fromTextArea(textarea, {
                     lineNumbers: true,
-                    mode: name.endsWith('.go') ? 'go' : 'text'
+                    mode: editorMode(name)
                 })
                 mirror.on("change", function (event) {
                     mirror.save()
