@@ -79,13 +79,19 @@ func main() {
 			log.Fatal(err)
 		}
 
-		for i, file := range archive.Files {
+		filtered := archive.Files[:0]
+		for _, file := range archive.Files {
 			updated, err := os.ReadFile(filepath.Join(tmpDir, filepath.FromSlash(file.Name)))
 			if err != nil {
 				log.Fatal(err)
 			}
-			archive.Files[i].Data = updated
+			if len(updated) == 0 {
+				continue
+			}
+			file.Data = updated
+			filtered = append(filtered, file)
 		}
+		archive.Files = filtered
 
 		if err := os.WriteFile(match, txtar.Format(archive), matchInfo.Mode().Perm()); err != nil {
 			log.Fatal(err)
