@@ -1,7 +1,3 @@
--- go.mod --
-module playground
-
-go 1.23.2
 -- main.go --
 package main
 
@@ -10,3 +6,7 @@ import "fmt"
 func main() {
 	fmt.Println("¡Hola Mundo!")
 }
+-- go.mod --
+module playground
+
+go 1.23.2
