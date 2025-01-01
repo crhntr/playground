@@ -124,7 +124,7 @@ func readDirectory(tmp string, archive *txtar.Archive) error {
 
 func handleDownload(res http.ResponseWriter, req *http.Request) {
 	const maxReadBytes = (1 << 10) * 8
-	req.ParseMultipartForm(maxReadBytes)
+	_ = req.ParseMultipartForm(maxReadBytes)
 	defer closeAndIgnoreError(req.Body)
 	archive, err := readArchive(req.Form)
 	if err != nil {
@@ -142,8 +142,8 @@ func handleDownload(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
-	output.Flush()
-	output.Close()
+	_ = output.Flush()
+	_ = output.Close()
 	res.Header().Set("Content-Disposition", "attachment")
 	res.Header().Set("Content-Type", "application/zip")
 	http.ServeContent(res, req, "playground.zip", time.Time{}, bytes.NewReader(buf.Bytes()))
@@ -159,7 +159,7 @@ func handleRun(goExecPath string) http.HandlerFunc {
 
 	return func(res http.ResponseWriter, req *http.Request) {
 		const maxReadBytes = (1 << 10) * 8
-		req.ParseMultipartForm(maxReadBytes)
+		_ = req.ParseMultipartForm(maxReadBytes)
 		defer closeAndIgnoreError(req.Body)
 		archive, err := readArchive(req.Form)
 		if err != nil {

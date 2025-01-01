@@ -49,7 +49,7 @@ func handleVersion(goVersion string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusOK)
-		res.Write([]byte(goVersion))
+		_, _ = res.Write([]byte(goVersion))
 	}
 }
 

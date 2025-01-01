@@ -16,7 +16,7 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 
 	return func(res http.ResponseWriter, req *http.Request) {
 		const maxReadBytes = (1 << 10) * 8
-		req.ParseMultipartForm(maxReadBytes)
+		_ = req.ParseMultipartForm(maxReadBytes)
 		defer closeAndIgnoreError(req.Body)
 		archive, err := readArchive(req.Form)
 		if err != nil {
