@@ -1,2 +1,3 @@
 github.com/crhntr/dom
 github.com/andybalholm/cascadia
+github.com/expr-lang/expr
