@@ -279,7 +279,13 @@ var permittedPackagesString string
 
 func permittedPackages() []string {
 	list := strings.Split(permittedPackagesString, "\n")
-	return list
+	filtered := list[:0]
+	for _, p := range list {
+		if p != "" {
+			filtered = append(filtered, p)
+		}
+	}
+	return filtered
 }
 
 func readArchive(form url.Values) (*txtar.Archive, error) {
