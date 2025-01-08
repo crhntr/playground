@@ -56,3 +56,5 @@ time/tzdata
 unicode
 unicode/utf16
 unicode/utf8
+
+github.com/expr-lang/expr
