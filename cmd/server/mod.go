@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"golang.org/x/tools/txtar"
 )
@@ -29,8 +31,23 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 			return
 		}
 
-		ctx := req.Context()
 		var outputBuffer bytes.Buffer
+
+		ctx, cancel := context.WithTimeout(req.Context(), time.Minute)
+		defer cancel()
+
+		get := exec.CommandContext(ctx, goExecPath,
+			"go", "get", "./...",
+		)
+		get.Stdout = &outputBuffer
+		get.Stderr = &outputBuffer
+		outputBuffer.WriteString("$ " + strings.Join(append([]string{path.Base(get.Path)}, get.Args...), " "))
+		err = get.Run()
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		tidy := exec.CommandContext(ctx, goExecPath,
 			"mod", "tidy",
 		)
