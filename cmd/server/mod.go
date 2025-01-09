@@ -2,11 +2,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"os"
-	"os/exec"
-	"path"
-	"strings"
+	"time"
 
 	"golang.org/x/tools/txtar"
 )
@@ -15,15 +14,7 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 	env := mergeEnv(os.Environ(), goEnvOverride()...)
 
 	return func(res http.ResponseWriter, req *http.Request) {
-		const maxReadBytes = (1 << 10) * 8
-		_ = req.ParseMultipartForm(maxReadBytes)
-		defer closeAndIgnoreError(req.Body)
-		archive, err := readArchive(req.Form)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-		tmp, err := writeDirectory(archive)
+		dir, err := newRequestDirectory(req)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
@@ -31,21 +22,16 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 
 		ctx := req.Context()
 		var outputBuffer bytes.Buffer
-		tidy := exec.CommandContext(ctx, goExecPath,
-			"mod", "tidy",
-		)
-		tidy.Stdout = &outputBuffer
-		tidy.Stderr = &outputBuffer
-		tidy.Env = env
-		tidy.Dir = tmp
-		outputBuffer.WriteString("$ " + strings.Join(append([]string{path.Base(tidy.Path)}, tidy.Args...), " "))
-		err = tidy.Run()
-		if err != nil {
+
+		ctx, cancel := context.WithTimeout(req.Context(), time.Minute)
+		defer cancel()
+
+		if err := dir.execGo(ctx, env, &outputBuffer, goExecPath, "go", "mod", "tidy"); err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		if err := readDirectory(tmp, archive); err != nil {
+		if err := dir.readFiles(); err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -53,7 +39,7 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 		renderHTML(res, req, templates.Lookup("editor"), http.StatusOK, struct {
 			Archive *txtar.Archive
 		}{
-			Archive: archive,
+			Archive: dir.Archive,
 		})
 	}
 }

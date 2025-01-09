@@ -85,3 +85,15 @@ func renderHTML(res http.ResponseWriter, _ *http.Request, ts *template.Template,
 }
 
 func closeAndIgnoreError(c io.Closer) { _ = c.Close() }
+
+func removeZeros[T comparable](in []T) []T {
+	filtered := in[:0]
+	for _, p := range in {
+		var zero T
+		if p == zero {
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+	return filtered
+}

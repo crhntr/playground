@@ -9,10 +9,7 @@ import (
 
 func handleFmt() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		const maxReadBytes = (1 << 10) * 8
-		_ = req.ParseMultipartForm(maxReadBytes)
-		defer closeAndIgnoreError(req.Body)
-		archive, err := readArchive(req.Form)
+		archive, err := newRequestArchive(req)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
