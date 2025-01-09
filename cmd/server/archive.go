@@ -1,6 +1,8 @@
 package main
 
 import (
+	"archive/zip"
+	"bytes"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -12,28 +14,60 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/crhntr/txtarfmt"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/txtar"
 )
 
-func newRequestArchive(req *http.Request) (*txtar.Archive, error) {
+type MemoryDirectory struct {
+	Archive *txtar.Archive
+}
+
+func newRequestArchive(req *http.Request) (MemoryDirectory, error) {
 	const maxReadBytes = (1 << 10) * 8
 	_ = req.ParseMultipartForm(maxReadBytes)
 	defer closeAndIgnoreError(req.Body)
 	return readArchive(req.Form)
 }
 
-func readArchive(form url.Values) (*txtar.Archive, error) {
+func readArchive(form url.Values) (MemoryDirectory, error) {
 	filenames := form["filename"]
 	archive := &txtar.Archive{Files: make([]txtar.File, 0, len(filenames))}
 	for _, filename := range filenames {
+		if !isPermittedFile(filename) {
+			return MemoryDirectory{}, fmt.Errorf("file not permitted: %s", filename)
+		}
 		archive.Files = append(archive.Files, txtar.File{
 			Name: filename,
 			Data: []byte(form.Get(filename)),
 		})
 	}
-	return archive, nil
+	return MemoryDirectory{Archive: archive}, nil
+}
+
+func (dir *MemoryDirectory) fmt() error {
+	return txtarfmt.Archive(dir.Archive, txtarfmt.Configuration{})
+}
+
+func (dir *MemoryDirectory) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	dirFS, err := txtar.FS(dir.Archive)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var buf bytes.Buffer
+	output := zip.NewWriter(&buf)
+	if err = output.AddFS(dirFS); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	_ = output.Flush()
+	_ = output.Close()
+	res.Header().Set("Content-Disposition", "attachment")
+	res.Header().Set("Content-Type", "application/zip")
+	http.ServeContent(res, req, "playground.zip", time.Time{}, bytes.NewReader(buf.Bytes()))
 }
 
 //go:embed assets/module_allow_list.txt
@@ -70,9 +104,9 @@ func newModule(file txtar.File) (Module, error) {
 	}, nil
 }
 
-func checkImports(fileName string, src []byte) error {
+func checkImports(file txtar.File) error {
 	var fileSet token.FileSet
-	file, err := parser.ParseFile(&fileSet, fileName, src, parser.ImportsOnly)
+	f, err := parser.ParseFile(&fileSet, file.Name, file.Data, parser.ImportsOnly)
 	if err != nil {
 		return fmt.Errorf("failed to parse main.go: %w", err)
 	}
@@ -81,7 +115,7 @@ func checkImports(fileName string, src []byte) error {
 		return s == ""
 	})
 
-	for _, spec := range file.Imports {
+	for _, spec := range f.Imports {
 		pkgPath, _ := strconv.Unquote(spec.Path.Value)
 		if slices.Index(permittedPackages(), pkgPath) >= 0 {
 			continue
@@ -115,7 +149,7 @@ func checkDependencies(archive *txtar.Archive) ([]Module, error) {
 			}
 			modules = append(modules, mod)
 		case path.Ext(base) == ".go":
-			if err := checkImports(file.Name, file.Data); err != nil {
+			if err := checkImports(file); err != nil {
 				return nil, fmt.Errorf("failed in %s: %w", file.Name, err)
 			}
 		}

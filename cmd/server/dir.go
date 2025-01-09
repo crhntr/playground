@@ -17,37 +17,33 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-type Directory struct {
+type FilesystemDirectory struct {
+	MemoryDirectory
 	TempDir string
 	Modules []Module
-	Archive *txtar.Archive
 }
 
-func newFilesystemDirectory(archive *txtar.Archive) (Directory, error) {
-	var dir Directory
-
-	if err := dir.checkDependencies(archive); err != nil {
+func newFilesystemDirectory(md MemoryDirectory) (FilesystemDirectory, error) {
+	dir := FilesystemDirectory{MemoryDirectory: md}
+	if err := dir.checkDependencies(); err != nil {
 		return dir, err
 	}
-	dir.Archive = archive
-
 	if err := dir.writeFiles(); err != nil {
 		return dir, fmt.Errorf("failed to write files %s: %w", dir.close(), err)
 	}
-
 	return dir, nil
 }
 
-func newRequestDirectory(req *http.Request) (Directory, error) {
+func newRequestDirectory(req *http.Request) (FilesystemDirectory, error) {
 	archive, err := newRequestArchive(req)
 	if err != nil {
-		return Directory{}, err
+		return FilesystemDirectory{}, err
 	}
 	return newFilesystemDirectory(archive)
 }
 
-func (dir *Directory) checkDependencies(archive *txtar.Archive) error {
-	mods, err := checkDependencies(archive)
+func (dir *FilesystemDirectory) checkDependencies() error {
+	mods, err := checkDependencies(dir.Archive)
 	if err != nil {
 		return err
 	}
@@ -55,7 +51,7 @@ func (dir *Directory) checkDependencies(archive *txtar.Archive) error {
 	return err
 }
 
-func (dir *Directory) close() error {
+func (dir *FilesystemDirectory) close() error {
 	if dir.TempDir == "" {
 		return nil
 	}
@@ -66,7 +62,7 @@ func (dir *Directory) close() error {
 	return nil
 }
 
-func (dir *Directory) readFiles() error {
+func (dir *FilesystemDirectory) readFiles() error {
 	for i, file := range dir.Archive.Files {
 		p := filepath.Join(dir.TempDir, filepath.FromSlash(file.Name))
 		buf, err := os.ReadFile(p)
@@ -78,7 +74,7 @@ func (dir *Directory) readFiles() error {
 	return nil
 }
 
-func (dir *Directory) writeFiles() error {
+func (dir *FilesystemDirectory) writeFiles() error {
 	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		log.Println("failed to create temporary directory", err)
@@ -96,7 +92,7 @@ func (dir *Directory) writeFiles() error {
 	return nil
 }
 
-func (dir *Directory) execGo(ctx context.Context, env []string, out io.Writer, goExecPath string, args ...string) error {
+func (dir *FilesystemDirectory) execGo(ctx context.Context, env []string, out io.Writer, goExecPath string, args ...string) error {
 	cmd := exec.CommandContext(ctx, goExecPath, args...)
 	cmd.Stdout = io.MultiWriter(os.Stdout, out)
 	cmd.Stderr = io.MultiWriter(os.Stdout, out)

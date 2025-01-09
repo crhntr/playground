@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"golang.org/x/tools/txtar"
 )
 
 func handleModTidy(goExecPath string) http.HandlerFunc {
@@ -26,7 +24,7 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), time.Minute)
 		defer cancel()
 
-		if err := dir.execGo(ctx, env, &outputBuffer, goExecPath, "go", "mod", "tidy"); err != nil {
+		if err := dir.execGo(ctx, env, &outputBuffer, goExecPath, "mod", "tidy"); err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -36,10 +34,6 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 			return
 		}
 
-		renderHTML(res, req, templates.Lookup("editor"), http.StatusOK, struct {
-			Archive *txtar.Archive
-		}{
-			Archive: dir.Archive,
-		})
+		renderHTML(res, req, templates.Lookup("editor"), http.StatusOK, dir)
 	}
 }

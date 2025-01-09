@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/zip"
 	"bytes"
 	"context"
 	_ "embed"
@@ -20,8 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/tools/txtar"
 )
 
 type (
@@ -38,14 +35,7 @@ type (
 	}
 )
 
-func buildWASM(ctx context.Context, env []string, goExecPath string, archive *txtar.Archive) (string, error) {
-	dir, err := newFilesystemDirectory(archive)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = dir.close()
-	}()
+func (dir *FilesystemDirectory) buildWASM(ctx context.Context, env []string, goExecPath string) (string, error) {
 	var outputBuffer bytes.Buffer
 	const output = "main.wasm"
 	buildArgs := []string{
@@ -58,7 +48,7 @@ func buildWASM(ctx context.Context, env []string, goExecPath string, archive *tx
 	cmd.Env = env
 	cmd.Dir = dir.TempDir
 	outputBuffer.WriteString("$ " + strings.Join(append([]string{path.Base(cmd.Path)}, buildArgs...), " "))
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		return "", errors.New(outputBuffer.String())
 	}
@@ -72,30 +62,12 @@ func buildWASM(ctx context.Context, env []string, goExecPath string, archive *tx
 }
 
 func handleDownload(res http.ResponseWriter, req *http.Request) {
-	const maxReadBytes = (1 << 10) * 8
-	_ = req.ParseMultipartForm(maxReadBytes)
-	defer closeAndIgnoreError(req.Body)
-	archive, err := readArchive(req.Form)
+	archive, err := newRequestArchive(req)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
-	dir, err := txtar.FS(archive)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
-	}
-	var buf bytes.Buffer
-	output := zip.NewWriter(&buf)
-	if err = output.AddFS(dir); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
-	}
-	_ = output.Flush()
-	_ = output.Close()
-	res.Header().Set("Content-Disposition", "attachment")
-	res.Header().Set("Content-Type", "application/zip")
-	http.ServeContent(res, req, "playground.zip", time.Time{}, bytes.NewReader(buf.Bytes()))
+	archive.ServeHTTP(res, req)
 }
 
 func handleRun(goExecPath string) http.HandlerFunc {
@@ -115,12 +87,6 @@ func handleRun(goExecPath string) http.HandlerFunc {
 	}
 
 	return func(res http.ResponseWriter, req *http.Request) {
-		dir, err := newRequestDirectory(req)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-
 		var runID = 1
 		if runIDQuery := req.FormValue("run-id"); runIDQuery != "" {
 			var err error
@@ -141,7 +107,16 @@ func handleRun(goExecPath string) http.HandlerFunc {
 			return
 		}
 
-		buildBase64, err := buildWASM(ctx, env, goExecPath, dir.Archive)
+		dir, err := newRequestDirectory(req)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer func() {
+			_ = dir.close()
+		}()
+
+		buildBase64, err := dir.buildWASM(ctx, env, goExecPath)
 		if err != nil {
 			renderHTML(res, req, templates.Lookup("build-failure"), http.StatusOK, RunFailure{
 				RunID:     runID,

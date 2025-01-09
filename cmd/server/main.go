@@ -97,3 +97,18 @@ func removeZeros[T comparable](in []T) []T {
 	}
 	return filtered
 }
+
+func handleFmt() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		archive, err := newRequestArchive(req)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := archive.fmt(); err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		renderHTML(res, req, templates.Lookup("editor"), http.StatusOK, archive)
+	}
+}
