@@ -13,12 +13,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
-	"path"
 	"path/filepath"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -42,18 +39,13 @@ func (dir *FilesystemDirectory) buildWASM(ctx context.Context, env []string, goE
 	buildArgs := []string{
 		"build",
 		"-o", output,
+		fmt.Sprintf("-gcflags=-trimpath=%s", dir.TempDir),
+		fmt.Sprintf("-asmflags=-trimpath=%s", dir.TempDir),
 	}
-	cmd := exec.CommandContext(ctx, goExecPath, append(buildArgs, fmt.Sprintf("-gcflags=-trimpath=%s", dir.TempDir), fmt.Sprintf("-asmflags=-trimpath=%s", dir.TempDir))...)
-	cmd.Stdout = &outputBuffer
-	cmd.Stderr = &outputBuffer
-	cmd.Env = env
-	cmd.Dir = dir.TempDir
-	outputBuffer.WriteString("$ " + strings.Join(append([]string{path.Base(cmd.Path)}, buildArgs...), " "))
-	err := cmd.Run()
+	err := dir.execGo(ctx, env, goExecPath, buildArgs...)
 	if err != nil {
 		return "", errors.New(outputBuffer.String())
 	}
-
 	wasmBuild, err := os.ReadFile(filepath.Join(dir.TempDir, output))
 	if err != nil {
 		return "", fmt.Errorf("failed to open build file: %w", err)

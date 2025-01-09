@@ -153,11 +153,15 @@ func handlePOSTInstall(goVersion string, examples []Example) http.HandlerFunc {
 }
 
 func isPermittedFile(in string) bool {
+	if len(in) > 200 || in == "" {
+		return false
+	}
 	base := path.Base(in)
 	if strings.HasPrefix(base, ".") {
 		return false
 	}
-	if base == "LICENSE" {
+	switch base {
+	case "LICENSE", "go.sum":
 		return true
 	}
 	switch strings.ToLower(path.Ext(in)) {

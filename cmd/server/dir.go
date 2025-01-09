@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -21,6 +22,8 @@ type FilesystemDirectory struct {
 	MemoryDirectory
 	TempDir string
 	Modules []Module
+
+	Output bytes.Buffer
 }
 
 func newFilesystemDirectory(md MemoryDirectory) (FilesystemDirectory, error) {
@@ -92,13 +95,13 @@ func (dir *FilesystemDirectory) writeFiles() error {
 	return nil
 }
 
-func (dir *FilesystemDirectory) execGo(ctx context.Context, env []string, out io.Writer, goExecPath string, args ...string) error {
+func (dir *FilesystemDirectory) execGo(ctx context.Context, env []string, goExecPath string, args ...string) error {
 	cmd := exec.CommandContext(ctx, goExecPath, args...)
-	cmd.Stdout = io.MultiWriter(os.Stdout, out)
-	cmd.Stderr = io.MultiWriter(os.Stdout, out)
+	cmd.Stdout = io.MultiWriter(os.Stdout, &dir.Output)
+	cmd.Stderr = io.MultiWriter(os.Stdout, &dir.Output)
 	cmd.Env = env
 	cmd.Dir = dir.TempDir
-	io.WriteString(out, "$ "+strings.Join(append([]string{path.Base(cmd.Path)}, cmd.Args...), " "))
+	io.WriteString(&dir.Output, "$ "+strings.Join(append([]string{path.Base(cmd.Path)}, cmd.Args...), " "))
 	if err := cmd.Run(); err != nil {
 		return err
 	}

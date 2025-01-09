@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"net/http"
 	"os"
@@ -18,13 +17,10 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 			return
 		}
 
-		ctx := req.Context()
-		var outputBuffer bytes.Buffer
-
 		ctx, cancel := context.WithTimeout(req.Context(), time.Minute)
 		defer cancel()
 
-		if err := dir.execGo(ctx, env, &outputBuffer, goExecPath, "mod", "tidy"); err != nil {
+		if err := dir.execGo(ctx, env, goExecPath, "mod", "tidy"); err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
