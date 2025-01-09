@@ -233,9 +233,6 @@ func checkModules(file txtar.File) error {
 	if err != nil {
 		return err
 	}
-	if len(module.Replace) != 0 {
-		return fmt.Errorf("replace directive is not allowed in module")
-	}
 	allowed := strings.Split(permittedModulesString, "\n")
 	allowed = slices.DeleteFunc(allowed, func(s string) bool {
 		return s == ""
@@ -282,13 +279,7 @@ var permittedPackagesString string
 
 func permittedPackages() []string {
 	list := strings.Split(permittedPackagesString, "\n")
-	filtered := list[:0]
-	for _, p := range list {
-		if p != "" {
-			filtered = append(filtered, p)
-		}
-	}
-	return filtered
+	return list
 }
 
 func readArchive(form url.Values) (*txtar.Archive, error) {
