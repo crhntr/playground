@@ -233,6 +233,9 @@ func checkModules(file txtar.File) error {
 	if err != nil {
 		return err
 	}
+	if len(module.Replace) != 0 {
+		return fmt.Errorf("replace directive is not allowed in module")
+	}
 	allowed := strings.Split(permittedModulesString, "\n")
 	allowed = slices.DeleteFunc(allowed, func(s string) bool {
 		return s == ""
