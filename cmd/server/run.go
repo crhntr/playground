@@ -278,8 +278,7 @@ func checkImports(mainGo string) error {
 var permittedPackagesString string
 
 func permittedPackages() []string {
-	list := strings.Split(permittedPackagesString, "\n")
-	return list
+	return removeZeros(strings.Split(permittedPackagesString, "\n"))
 }
 
 func readArchive(form url.Values) (*txtar.Archive, error) {
@@ -292,4 +291,16 @@ func readArchive(form url.Values) (*txtar.Archive, error) {
 		})
 	}
 	return archive, nil
+}
+
+func removeZeros[T comparable](in []T) []T {
+	filtered := in[:0]
+	for _, p := range in {
+		var zero T
+		if p == zero {
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+	return filtered
 }
