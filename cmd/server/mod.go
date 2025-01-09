@@ -37,7 +37,7 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 		defer cancel()
 
 		get := exec.CommandContext(ctx, goExecPath,
-			"go", "get", "./...",
+			"go", "get", "-u", "./...",
 		)
 		get.Stdout = &outputBuffer
 		get.Stderr = &outputBuffer
