@@ -41,6 +41,8 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 		)
 		get.Stdout = &outputBuffer
 		get.Stderr = &outputBuffer
+		get.Env = env
+		get.Dir = tmp
 		outputBuffer.WriteString("$ " + strings.Join(append([]string{path.Base(get.Path)}, get.Args...), " "))
 		err = get.Run()
 		if err != nil {
