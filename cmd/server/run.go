@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -104,6 +105,10 @@ func handleRun(goExecPath string) http.HandlerFunc {
 		if err != nil {
 			log.Println("failed to parse current url", err)
 			http.Error(res, "failed to parse current url", http.StatusInternalServerError)
+			return
+		}
+		if !slices.Contains([]string{"http", "https"}, currentURL.Scheme) {
+			http.Error(res, "unsupported scheme", http.StatusBadRequest)
 			return
 		}
 
