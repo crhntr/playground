@@ -1,6 +1,12 @@
 github.com/crhntr/txtarfmt v0.0.3 h1:md+rcVbmNGvb3guHvkrtUpCx3Fdvn1aeDfO+p9QLd3M=
 github.com/crhntr/txtarfmt v0.0.3/go.mod h1:gbXTHDJOIByGPykOLRQCVjBxVjYezrU6gE6i0BQZ/zw=
+github.com/crhntr/txtarfmt v0.0.4 h1:CFWO3z8iFTmMtCmZXM/YQ+VlNO363CaivZxNNfbke4M=
+github.com/crhntr/txtarfmt v0.0.4/go.mod h1:9xigpoPA2d55iwXQbyKMLzUjH7oKAtOlPAazpn6bvME=
 golang.org/x/mod v0.22.0 h1:D4nJWe9zXqHOmWqj4VMOJhvzj7bEZg4wEYa759z1pH4=
 golang.org/x/mod v0.22.0/go.mod h1:6SkKJ3Xj0I0BrPOZoBy3bdMptDDU9oJrpohJ3eWZ1fY=
+golang.org/x/mod v0.23.0 h1:Zb7khfcRGKk+kqfxFaP5tZqCnDZMjC5VtUBs87Hr6QM=
+golang.org/x/mod v0.23.0/go.mod h1:6SkKJ3Xj0I0BrPOZoBy3bdMptDDU9oJrpohJ3eWZ1fY=
 golang.org/x/tools v0.28.0 h1:WuB6qZ4RPCQo5aP3WdKZS7i595EdWqWR8vqJTlwTVK8=
 golang.org/x/tools v0.28.0/go.mod h1:dcIOrVd3mfQKTgrDVQHqCPMWy6lnhfhtX3hLXYVLfRw=
+golang.org/x/tools v0.29.0 h1:Xx0h3TtM9rzQpQuR4dKLrdglAmCEN5Oi+P74JdhdzXE=
+golang.org/x/tools v0.29.0/go.mod h1:KMQVMRsVxU6nHCFXrBPhDB8XncLNLM0lIy/F14RP588=

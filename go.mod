@@ -5,7 +5,7 @@ go 1.23.2
 toolchain go1.23.3
 
 require (
-	github.com/crhntr/txtarfmt v0.0.3
-	golang.org/x/mod v0.22.0
-	golang.org/x/tools v0.28.0
+	github.com/crhntr/txtarfmt v0.0.4
+	golang.org/x/mod v0.23.0
+	golang.org/x/tools v0.29.0
 )
