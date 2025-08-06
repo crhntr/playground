@@ -63,7 +63,7 @@
           return true
       }
 
-      function main() {
+      document.addEventListener('DOMContentLoaded', function() {
           const runID = parseInt(document.querySelector('meta[name="go-playground-run-id"]').getAttribute('content'))
 
           const binaryTemplate = document.querySelector('#binary')
@@ -74,10 +74,10 @@
               console.error(e)
               postMessage({name: 'error', message: e.message})
           }
-      }
+      })
   </script>
 </head>
 <script>{{.WASMExecJS}}</script>
-<body onload="main()"></body>
+<body></body>
 <template id="binary" data-base64="data:application/wasm;base64,{{.BinaryBase64}}"></template>
 </html>
