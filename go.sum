@@ -2,6 +2,8 @@ github.com/crhntr/txtarfmt v0.0.7 h1:V1lmZ4PjmJvGAYdcP0YyTgUn3yfdCD6JNnwjWeT9bpw
 github.com/crhntr/txtarfmt v0.0.7/go.mod h1:6u3aUxZPnX1sYYxQE1nCRiQx802nucrcN4vToyuepco=
 github.com/crhntr/txtarfmt v0.0.8 h1:9jEse/+skXLMH0RETZJfGqObkFI6JY/Qnw3okSF0OAc=
 github.com/crhntr/txtarfmt v0.0.8/go.mod h1:ElGOH5+0DPJWwnd8A7eBw+uzBd+aKj/YsMXxgOWxRns=
+github.com/crhntr/txtarfmt v0.0.9 h1:dxH+E2jfg2wwuYDGhyLe3bi3+TdiTADofbuIR+v6zAI=
+github.com/crhntr/txtarfmt v0.0.9/go.mod h1:Jt4sJKzfqjgr249pgRbN/9mm7Fqvs1E82xDRIUN4Coc=
 golang.org/x/mod v0.24.0 h1:ZfthKaKaT4NrhGVZHO1/WDTwGES4De8KtWO0SIbNJMU=
 golang.org/x/mod v0.24.0/go.mod h1:IXM97Txy2VM4PJ3gI61r1YEk/gAj6zAHN3AdZt6S9Ww=
 golang.org/x/mod v0.30.0 h1:fDEXFVZ/fmCKProc/yAXXUijritrDzahmwwefnjoPFk=
