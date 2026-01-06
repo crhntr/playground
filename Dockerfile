@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine
+FROM golang:1.25-alpine
 COPY . /playground
 WORKDIR /playground
 RUN mkdir -p cmd/server/assets/lib && \
