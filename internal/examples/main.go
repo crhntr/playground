@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/crhntr/txtarfmt"
 	"golang.org/x/tools/txtar"
 )
 
@@ -33,65 +34,28 @@ func main() {
 			log.Fatal(err)
 		}
 		archive := txtar.Parse(buf)
+
 		tmpDir := filepath.Join(tmp, strings.TrimSuffix(path.Base(match), ".txtar"))
-		dirFS, err := txtar.FS(archive)
+		if err := os.MkdirAll(tmpDir, 0744); err != nil {
+			log.Fatal(err)
+		}
+		commands := []*exec.Cmd{
+			exec.Command("go", "mod", "tidy"),
+			exec.Command("go", "get", "-u", fmt.Sprintf(".%c...", filepath.Separator)),
+			exec.Command("gofumpt", "-w", "."),
+			exec.Command("go", "build", "-v", "."),
+		}
+		for i := range commands {
+			commands[i].Env = append([]string{"GOOS=js", "GOARCH=wasm"}, commands[i].Environ()...)
+			commands[i].Stderr = os.Stdout
+			commands[i].Stdout = os.Stdout
+		}
+
+		updated, err := txtarfmt.Execute(tmpDir, []string{"playground"}, archive, commands...)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := os.CopyFS(tmpDir, dirFS); err != nil {
-			log.Fatal(err)
-		}
-
-		tidy := exec.Command("go", "mod", "tidy")
-		tidy.Dir = tmpDir
-		fmt.Println(tidy.Args)
-		tidy.Stderr = os.Stdout
-		tidy.Stdout = os.Stdout
-		if err := tidy.Run(); err != nil {
-			log.Fatal(err)
-		}
-
-		get := exec.Command("go", "get", "-u", fmt.Sprintf(".%c...", filepath.Separator))
-		get.Dir = tmpDir
-		fmt.Println(get.Args)
-		get.Stderr = os.Stdout
-		get.Stdout = os.Stdout
-		if err := get.Run(); err != nil {
-			log.Fatal(err)
-		}
-
-		format := exec.Command("gofumpt", "-w", ".")
-		format.Dir = tmpDir
-		fmt.Println(format.Args)
-		format.Stderr = os.Stdout
-		format.Stdout = os.Stdout
-		if err := format.Run(); err != nil {
-			log.Fatal(err)
-		}
-
-		build := exec.Command("go", "build", "-v", ".")
-		build.Env = append([]string{"GOOS=js", "GOARCH=wasm"}, build.Environ()...)
-		build.Dir = tmpDir
-		fmt.Println(build.Args)
-		build.Stderr = os.Stdout
-		build.Stdout = os.Stdout
-		if err := build.Run(); err != nil {
-			log.Fatal(err)
-		}
-
-		filtered := archive.Files[:0]
-		for _, file := range archive.Files {
-			updated, err := os.ReadFile(filepath.Join(tmpDir, filepath.FromSlash(file.Name)))
-			if err != nil {
-				log.Fatal(err)
-			}
-			if len(updated) == 0 {
-				continue
-			}
-			file.Data = updated
-			filtered = append(filtered, file)
-		}
-		archive.Files = filtered
+		archive.Files = updated.Files
 
 		if err := os.WriteFile(match, txtar.Format(archive), matchInfo.Mode().Perm()); err != nil {
 			log.Fatal(err)

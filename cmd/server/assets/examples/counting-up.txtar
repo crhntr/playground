@@ -1,3 +1,7 @@
+-- go.mod --
+module playground
+
+go 1.23.2
 -- main.go --
 package main
 
@@ -21,7 +25,3 @@ func main() {
 		time.Sleep(time.Second / 2)
 	}
 }
--- go.mod --
-module playground
-
-go 1.23.2

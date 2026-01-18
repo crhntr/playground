@@ -1,10 +1,10 @@
+-- go.mod --
+module playground
+
+go 1.23.2
 -- main.go --
 package main
 
 func main() {
 	println(`</pre><script>alert("Hello!")</script>`)
 }
--- go.mod --
-module playground
-
-go 1.23.2
