@@ -3,8 +3,8 @@ module github.com/crhntr/playground
 go 1.25
 
 require (
-	github.com/crhntr/txtarfmt v0.2.0
-	golang.org/x/mod v0.31.0
+	github.com/crhntr/txtarfmt v0.3.0
+	golang.org/x/mod v0.32.0
 	golang.org/x/tools v0.40.0
 )
 
