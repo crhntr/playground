@@ -4,7 +4,7 @@
 -- go.mod --
 module playground
 
-go 1.24
+go 1.25.4
 
 require github.com/crhntr/dom v0.5.4
 -- go.sum --

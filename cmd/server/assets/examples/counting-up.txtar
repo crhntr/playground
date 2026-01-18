@@ -1,7 +1,7 @@
 -- go.mod --
 module playground
 
-go 1.23.2
+go 1.25.4
 -- main.go --
 package main
 

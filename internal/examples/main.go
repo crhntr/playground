@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/crhntr/txtarfmt"
@@ -22,6 +23,11 @@ func main() {
 	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		log.Fatal(err)
+	}
+	goModVersion := "1.23"
+	bi, ok := debug.ReadBuildInfo()
+	if ok && bi.GoVersion != "" {
+		goModVersion = strings.TrimLeft(bi.GoVersion, "vgo")
 	}
 	for _, match := range matches {
 		fmt.Println(match)
@@ -41,6 +47,7 @@ func main() {
 		}
 		commands := []*exec.Cmd{
 			exec.Command("go", "mod", "tidy"),
+			exec.Command("go", "mod", "edit", "-go", goModVersion),
 			exec.Command("go", "get", "-u", fmt.Sprintf(".%c...", filepath.Separator)),
 			exec.Command("gofumpt", "-w", "."),
 			exec.Command("go", "build", "-v", "."),
