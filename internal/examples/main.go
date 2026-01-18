@@ -50,7 +50,6 @@ func main() {
 			exec.Command("go", "mod", "edit", "-go", goModVersion),
 			exec.Command("go", "get", "-u", fmt.Sprintf(".%c...", filepath.Separator)),
 			exec.Command("gofumpt", "-w", "."),
-			exec.Command("go", "build", "-v", "."),
 		}
 		for i := range commands {
 			commands[i].Env = append([]string{"GOOS=js", "GOARCH=wasm"}, commands[i].Environ()...)
@@ -58,11 +57,15 @@ func main() {
 			commands[i].Stdout = os.Stdout
 		}
 
-		updated, err := txtarfmt.Execute(tmpDir, []string{"playground"}, archive, commands...)
+		updated, err := txtarfmt.Execute(tmpDir, []string{"go.sum"}, archive, commands...)
 		if err != nil {
 			log.Fatal(err)
 		}
 		archive.Files = updated.Files
+
+		if err := txtarfmt.Archive(archive, txtarfmt.Configuration{}); err != nil {
+			log.Fatal(err)
+		}
 
 		if err := os.WriteFile(match, txtar.Format(archive), matchInfo.Mode().Perm()); err != nil {
 			log.Fatal(err)
