@@ -1,5 +1,3 @@
-github.com/crhntr/txtarfmt v0.3.0 h1:XhMmgaOTZiyfrTUTFqdm98I1MuylMfpXEmExseK9Ksc=
-github.com/crhntr/txtarfmt v0.3.0/go.mod h1:OGbOV7EnNiSjIwCv4UhXY1BuQQ2QwgGSzQlaLYUgnvw=
 github.com/crhntr/txtarfmt v0.4.0 h1:SKiTfrXuK7sagQAO5MVzZcqyf9MJH3moo76XzEizEfs=
 github.com/crhntr/txtarfmt v0.4.0/go.mod h1:6mXe3F8cAQtatKyHKTJf05QNP70zkblp1blI1CJTjy4=
 golang.org/x/mod v0.32.0 h1:9F4d3PHLljb6x//jOyokMv3eX+YDeepZSEo3mFJy93c=

@@ -1,6 +1,6 @@
 module github.com/crhntr/playground
 
-go 1.25
+go 1.25.6
 
 require (
 	github.com/crhntr/txtarfmt v0.4.0
