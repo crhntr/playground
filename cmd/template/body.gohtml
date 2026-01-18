@@ -1,7 +1,26 @@
 {{define "body"}}
-<label for='input'>"html/template" Input</label><br>
-<textarea id="input" name='input'>Hello, world!</textarea>
 
+<div>
+	<label for='data'>Data</label>
+	<br>
+	<textarea id="data" name='data'>{}</textarea>
+</div>
+
+<div>
+	<label for='types'>Type</label>
+	<br>
+	<select id='types' name='types'>
+      {{range .Types -}}
+				<option value='{{.Name}}'>{{.Name}}</option>
+      {{end -}}
+	</select>
+</div>
+
+<div>
+	<label for='input'>"html/template" Input</label><br>
+	<br>
+	<textarea id="input" name='input'>Hello, world!</textarea>
+</div>
 <p id='error'></p>
 
 <iframe id='output' width='300' height='600'></iframe>
