@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -115,9 +116,11 @@ func handleRun(goExecPath string) http.HandlerFunc {
 
 		buildBase64, err := dir.buildWASM(ctx, env, goExecPath)
 		if err != nil {
-			renderHTML(res, req, templates.Lookup("build-failure"), http.StatusOK, RunFailure{
-				RunID:     runID,
-				BuildLogs: err.Error(),
+			renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+				return templates.ExecuteTemplate(w, "build-failure", RunFailure{
+					RunID:     runID,
+					BuildLogs: err.Error(),
+				})
 			})
 			return
 		}
@@ -137,9 +140,13 @@ func handleRun(goExecPath string) http.HandlerFunc {
 				return
 			}
 			data.SourceHTMLDocument = buf.String()
-			renderHTML(res, req, templates.Lookup("run-item"), http.StatusOK, data)
+			renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+				return templates.ExecuteTemplate(w, "run-item", data)
+			})
 		} else {
-			renderHTML(res, req, templates.Lookup("run.html.template"), http.StatusOK, data)
+			renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+				return templates.ExecuteTemplate(w, "run.html.template", data)
+			})
 		}
 	}
 }

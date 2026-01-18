@@ -55,7 +55,9 @@ func handleIndexPage(goVersion string, examples []Example) http.HandlerFunc {
 				data.Archive = txtar.Parse(buf)
 			}
 		}
-		renderHTML(res, req, templates.Lookup("index.html.template"), http.StatusOK, data)
+		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+			return templates.ExecuteTemplate(w, "index.html.template", data)
+		})
 	}
 }
 
@@ -70,7 +72,9 @@ func handleGETInstall(goVersion string) http.HandlerFunc {
 			CopyrightNotice: fmt.Sprintf(CopyrightNotice, time.Now().Year()),
 			GoVersion:       goVersion,
 		}
-		renderHTML(res, req, templates.Lookup("upload.html.template"), http.StatusOK, data)
+		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+			return templates.ExecuteTemplate(w, "upload.html.template", data)
+		})
 	}
 }
 
@@ -148,7 +152,10 @@ func handlePOSTInstall(goVersion string, examples []Example) http.HandlerFunc {
 			Name:            "Upload",
 			Archive:         &archive,
 		}
-		renderHTML(res, req, templates.Lookup("index.html.template"), http.StatusOK, data)
+
+		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+			return templates.ExecuteTemplate(w, "index.html.template", data)
+		})
 	}
 }
 

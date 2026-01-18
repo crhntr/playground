@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -30,6 +31,8 @@ func handleModTidy(goExecPath string) http.HandlerFunc {
 			return
 		}
 
-		renderHTML(res, req, templates.Lookup("editor"), http.StatusOK, dir)
+		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+			return templates.ExecuteTemplate(w, "editor", dir)
+		})
 	}
 }
