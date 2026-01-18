@@ -1,0 +1,84 @@
+-- body.gohtml --
+{{define "body"}}
+<label for='input'>"html/template" Input</label><br>
+<textarea id="input" name='input'>Hello, world!</textarea>
+
+<p id='error'></p>
+
+<iframe id='output' width='300' height='600'></iframe>
+{{end}}
+-- go.mod --
+module github.com/crhntr/playground/cmd/template
+
+go 1.25.4
+
+require github.com/typelate/dom v0.7.2 // indirect
+-- go.sum --
+github.com/typelate/dom v0.7.2 h1:BmdmhskiENlX6OaTLFDb93u6MbMIHDIgF4y/rSiqHWQ=
+github.com/typelate/dom v0.7.2/go.mod h1:O5f90nKvP99k36mSoxRekl+TkfnYLmMVFoR4EDL+n5k=
+-- main.go --
+package main
+
+import (
+        "bytes"
+        "embed"
+        "fmt"
+        "html/template"
+        "os"
+        "syscall/js"
+)
+
+//go:embed body.gohtml
+var templateSource embed.FS
+
+var templates = template.Must(template.ParseFS(templateSource, "*"))
+
+func main() {
+        var buf bytes.Buffer
+        if err := templates.ExecuteTemplate(&buf, "body", nil); err != nil {
+                fmt.Println(err)
+                os.Exit(1)
+        }
+        js.Global().Get("document").Call("querySelector", "body").Call("insertAdjacentHTML", "beforeend", buf.String())
+        textareaEl := js.Global().Get("document").Call("querySelector", "#input")
+        errorEl := js.Global().Get("document").Call("querySelector", "#error")
+        iframeEl := js.Global().Get("document").Call("querySelector", "#output")
+        changeHandler := js.FuncOf(func(this js.Value, args []js.Value) any {
+                executeTemplate(textareaEl, errorEl, iframeEl)
+                return nil
+        })
+        textareaEl.Call("addEventListener", "change", changeHandler, js.ValueOf(false))
+        defer textareaEl.Call("removeEventListener", "change", changeHandler, js.ValueOf(false))
+        select {}
+}
+
+func executeTemplate(textareaElement, errorElement, outputElement js.Value) {
+        if textareaElement.IsNull() {
+                panic("textarea element is null")
+        }
+        if errorElement.IsNull() {
+                panic("error element is null")
+        }
+        if outputElement.IsNull() {
+                panic("output element is null")
+        }
+
+        textareaValue := textareaElement.Get("value").String()
+
+        t, err := template.New("textarea").Parse(textareaValue)
+        if err != nil {
+                errorElement.Set("innerText", err.Error())
+                outputElement.Set("srcdoc", "")
+                return
+        }
+
+        var buf bytes.Buffer
+        if err := t.Execute(&buf, struct{}{}); err != nil {
+                errorElement.Set("innerText", err.Error())
+                outputElement.Set("srcdoc", "")
+                return
+        }
+
+        errorElement.Set("innerText", "")
+        outputElement.Set("srcdoc", buf.String())
+}
