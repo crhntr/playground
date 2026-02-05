@@ -50,6 +50,8 @@ func main() {
 	mux.Handle("POST /go/run", handleRun(goExecPath))
 	mux.Handle("POST /go/mod/tidy", handleModTidy(goExecPath))
 	mux.Handle("POST /fmt", handleFmt())
+	mux.Handle("POST /file/new", handleNewFile())
+	mux.Handle("POST /file/delete", handleDeleteFile())
 	mux.HandleFunc("POST /download", handleDownload)
 
 	mux.HandleFunc("GET /upload", handleGETInstall(goVersion))

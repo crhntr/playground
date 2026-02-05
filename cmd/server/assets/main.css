@@ -137,3 +137,56 @@ input[type=checkbox]:checked + label:after {
 [for="hide-window"] {
 	font-weight: bolder;
 }
+
+summary {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	cursor: pointer;
+}
+
+summary span {
+	flex: 1;
+}
+
+.delete-file {
+	font-size: 0.75rem;
+	padding: 0.2rem 0.5rem;
+	margin-left: 0.5rem;
+	background: var(--fuchsia);
+	color: white;
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+.delete-file:hover {
+	background: hsl(342, 61%, 40%);
+}
+
+#new-file-form {
+	margin: 1rem 0;
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+#new-file-form input[type="text"] {
+	padding: 0.5rem;
+	border: 1px solid dimgrey;
+	border-radius: 3px;
+	font-family: monospace;
+}
+
+#new-file-form button {
+	padding: 0.5rem 1rem;
+	background: var(--gopher-blue);
+	color: white;
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+#new-file-form button:hover {
+	background: var(--aqua);
+}
