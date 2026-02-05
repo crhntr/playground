@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"net/http"
+	"path"
 	"slices"
 
 	"golang.org/x/tools/txtar"
@@ -35,7 +36,7 @@ func handleNewFile() http.HandlerFunc {
 		}
 
 		var content []byte
-		if len(filename) > 3 && filename[len(filename)-3:] == ".go" {
+		if path.Ext(filename) == ".go" {
 			content = []byte("package main\n")
 		}
 
