@@ -140,11 +140,13 @@
 <details open>
 	<summary>
 		<span>{{.Name}}</span>
+	</summary>
+	<header class='details-header'>
 		<button type="button" class="delete-file" aria-label="Delete {{.Name}}"
 		        hx-post="/file/delete" hx-target="#editor" hx-include="#editor"
 		        hx-vals='{"delete-filename": "{{.Name}}"}'
 		        hx-confirm="Delete &quot;{{.Name}}&quot;?">Delete</button>
-	</summary>
-    {{template "editor-textarea" .}}
+	</header>
+  {{template "editor-textarea" .}}
 </details>
 {{- end}}

@@ -19,7 +19,7 @@ body, html, main {
 	font-family: 'Work Sans', sans-serif;
 }
 
-header {
+body>header {
 	margin-bottom: 2rem;
 	display: flex;
 	justify-content: space-between;
@@ -30,11 +30,11 @@ header {
 
 	color: white;
 }
-header .page-name {
+body>header .page-name {
 	padding: .5rem;
 	font-size: 1.8rem;
 }
-header a {
+body>header a {
 	padding: .5rem;
 	text-decoration: none;
 	color: white;
@@ -136,6 +136,16 @@ input[type=checkbox]:checked + label:after {
 }
 [for="hide-window"] {
 	font-weight: bolder;
+}
+
+details {
+	margin-bottom: 1rem;
+}
+
+details>header {
+	display: flex;
+	padding: 1rem;
+	justify-content: flex-end;
 }
 
 summary {
