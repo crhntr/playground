@@ -26,8 +26,7 @@ type MemoryDirectory struct {
 }
 
 func newRequestArchive(req *http.Request) (MemoryDirectory, error) {
-	const maxReadBytes = (1 << 10) * 8
-	_ = req.ParseMultipartForm(maxReadBytes)
+	_ = req.ParseMultipartForm(maxBodyBytes)
 	defer closeAndIgnoreError(req.Body)
 	return readArchive(req.Form)
 }

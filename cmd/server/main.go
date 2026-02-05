@@ -17,6 +17,11 @@ import (
 	"strings"
 )
 
+const (
+	maxBodyBytes   = 1 << 14
+	maxHeaderBytes = 1 << 13
+)
+
 var (
 	//go:embed assets
 	assets embed.FS
@@ -58,7 +63,12 @@ func main() {
 	mux.HandleFunc("POST /upload", handlePOSTInstall(goVersion, examples))
 
 	addr := ":" + cmp.Or(os.Getenv("PORT"), "8080")
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	server := &http.Server{
+		Handler:        mux,
+		Addr:           addr,
+		MaxHeaderBytes: maxHeaderBytes, // 8 kibibytes
+	}
+	if err := server.ListenAndServe(); err != nil {
 		panic(err)
 	}
 }
