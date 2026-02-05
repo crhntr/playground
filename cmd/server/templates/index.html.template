@@ -84,18 +84,9 @@
 <main>
     {{block "editor" . -}}
 		<form id="editor" hx-indicator="#run" method="POST" action="/download">
-            {{- range .Archive.Files -}}
-	            <details open>
-		            <summary>
-			            <span>{{.Name}}</span>
-			            <button type="button" class="delete-file" aria-label="Delete {{.Name}}"
-			                    hx-post="/file/delete" hx-target="#editor" hx-include="#editor"
-			                    hx-vals='{"delete-filename": "{{.Name}}"}'
-			                    hx-confirm="Delete &quot;{{.Name}}&quot;?">Delete</button>
-		            </summary>
-                {{template "editor-textarea" .}}
-	            </details>
-            {{- end -}}
+      {{range .Archive.Files}}
+		    {{- template "file-view" .}}
+      {{end}}
 			<div id="new-file-form">
 				<input type="text" name="new-filename" placeholder="filename.go" aria-label="New file name">
 				<button type="button" hx-post="/file/new" hx-target="#editor" hx-include="#editor, [name='new-filename']">New File</button>
@@ -143,3 +134,17 @@
 	>{{.Data | bytesToString}}</textarea>
 	<input name="filename" value="{{.Name}}" type='hidden'>
 {{end}}
+
+
+{{define "file-view" -}}
+<details open>
+	<summary>
+		<span>{{.Name}}</span>
+		<button type="button" class="delete-file" aria-label="Delete {{.Name}}"
+		        hx-post="/file/delete" hx-target="#editor" hx-include="#editor"
+		        hx-vals='{"delete-filename": "{{.Name}}"}'
+		        hx-confirm="Delete &quot;{{.Name}}&quot;?">Delete</button>
+	</summary>
+    {{template "editor-textarea" .}}
+</details>
+{{- end}}
