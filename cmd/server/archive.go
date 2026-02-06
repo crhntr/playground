@@ -43,7 +43,9 @@ func readMemoryDirectory(req *http.Request) (MemoryDirectory, error) {
 		if toggleView {
 			multiFile = true
 		}
-		return MemoryDirectory{Archive: archive, MultiFile: multiFile}, nil
+		dir := MemoryDirectory{Archive: archive, MultiFile: multiFile}
+		expandNestedTxtar(&dir)
+		return dir, nil
 	}
 
 	filenames := req.Form["filename"]
@@ -62,7 +64,9 @@ func readMemoryDirectory(req *http.Request) (MemoryDirectory, error) {
 	if toggleView {
 		multiFile = false
 	}
-	return MemoryDirectory{Archive: archive, MultiFile: multiFile}, nil
+	dir := MemoryDirectory{Archive: archive, MultiFile: multiFile}
+	expandNestedTxtar(&dir)
+	return dir, nil
 }
 
 func newMemoryDirectoryFromFS(r fs.FS) (MemoryDirectory, error) {
@@ -87,6 +91,9 @@ func newMemoryDirectoryFromFS(r fs.FS) (MemoryDirectory, error) {
 		})
 		return nil
 	})
+	if err == nil {
+		expandNestedTxtar(&dir)
+	}
 	return dir, err
 }
 
@@ -94,6 +101,25 @@ func (dir MemoryDirectory) Txtar() string { return string(txtar.Format(dir.Archi
 
 func (dir *MemoryDirectory) fmt() error {
 	return txtarfmt.Archive(dir.Archive, txtarfmt.Configuration{})
+}
+
+func expandNestedTxtar(dir *MemoryDirectory) {
+	var expanded []txtar.File
+	for _, file := range dir.Archive.Files {
+		if path.Ext(file.Name) != ".txtar" {
+			expanded = append(expanded, file)
+			continue
+		}
+		nested := txtar.Parse(file.Data)
+		dirPath := strings.TrimSuffix(file.Name, ".txtar")
+		for _, nestedFile := range nested.Files {
+			expanded = append(expanded, txtar.File{
+				Name: path.Join(dirPath, nestedFile.Name),
+				Data: nestedFile.Data,
+			})
+		}
+	}
+	dir.Archive.Files = expanded
 }
 
 func (dir *MemoryDirectory) ServeHTTP(res http.ResponseWriter, req *http.Request) {
