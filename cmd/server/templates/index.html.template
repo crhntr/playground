@@ -102,8 +102,10 @@
 				<button type="button" hx-boost='true' hx-post="/fmt" hx-target="#editor" hx-include="#editor">Format</button>
 				<button type="button" hx-boost='true' hx-post="/go/mod/tidy" hx-target="#editor" hx-include="#editor">Tidy Module</button>
 				<button type="submit" formaction="/download" hx-boost='false'>Download</button>
-				<input type="text" name="new-filename" placeholder="filename.go" aria-label="New file name">
-				<button type="button" hx-boost='true' hx-post="/file/new" hx-target="#editor" hx-include="#editor, [name='new-filename']">New File</button>
+				{{if .MultiFile -}}
+					<input type="text" name="new-filename" placeholder="filename.go" aria-label="New file name">
+					<button type="button" hx-boost='true' hx-post="/file/new" hx-target="#editor" hx-include="#editor, [name='new-filename']">New File</button>
+				{{- end}}
 			</div>
 
 			<div id="run">
