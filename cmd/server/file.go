@@ -11,7 +11,7 @@ import (
 
 func handleNewFile() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		archive, err := newRequestArchive(req)
+		archive, err := readMemoryDirectory(req)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
@@ -53,7 +53,7 @@ func handleNewFile() http.HandlerFunc {
 
 func handleDeleteFile() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		archive, err := newRequestArchive(req)
+		archive, err := readMemoryDirectory(req)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return

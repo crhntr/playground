@@ -50,6 +50,7 @@ func main() {
 
 	mux.Handle("GET /assets/", http.FileServer(http.FS(assets)))
 	mux.Handle("GET /", handleIndexPage(goVersion, examples))
+	mux.Handle("POST /", handlePOSTIndex(goVersion, examples))
 
 	mux.Handle("GET /go/version", handleVersion(goVersion))
 	mux.Handle("POST /go/run", handleRun(goExecPath))
@@ -112,17 +113,17 @@ func removeZeros[T comparable](in []T) []T {
 
 func handleFmt() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		archive, err := newRequestArchive(req)
+		dir, err := readMemoryDirectory(req)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := archive.fmt(); err != nil {
+		if err := dir.fmt(); err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
 		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
-			return templates.ExecuteTemplate(w, "editor", archive)
+			return templates.ExecuteTemplate(w, "editor", dir)
 		})
 	}
 }

@@ -22,7 +22,7 @@ type Index struct {
 	CopyrightNotice, GoVersion string
 	Examples                   []Example
 	Name                       string
-	Archive                    *txtar.Archive
+	Dir                        MemoryDirectory
 }
 
 type Example struct {
@@ -52,8 +52,28 @@ func handleIndexPage(goVersion string, examples []Example) http.HandlerFunc {
 					http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				data.Archive = txtar.Parse(buf)
+				data.Dir.Archive = txtar.Parse(buf)
 			}
+		}
+		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+			return templates.ExecuteTemplate(w, "index.html.template", data)
+		})
+	}
+}
+
+func handlePOSTIndex(goVersion string, examples []Example) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		dir, err := readMemoryDirectory(req)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		data := Index{
+			CopyrightNotice: fmt.Sprintf(CopyrightNotice, time.Now().Year()),
+			GoVersion:       goVersion,
+			Examples:        examples,
+			Name:            "",
+			Dir:             dir,
 		}
 		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
 			return templates.ExecuteTemplate(w, "index.html.template", data)
@@ -105,8 +125,7 @@ func handlePOSTInstall(goVersion string, examples []Example) http.HandlerFunc {
 				break
 			}
 		} else {
-			const maxReadBytes = (1 << 10) * 8
-			body := io.LimitReader(req.Body, maxReadBytes)
+			body := io.LimitReader(req.Body, maxBodyBytes)
 			defer closeAndIgnoreError(req.Body)
 			buf, err := io.ReadAll(body)
 			if err != nil {
@@ -121,25 +140,7 @@ func handlePOSTInstall(goVersion string, examples []Example) http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		var archive txtar.Archive
-		err = fs.WalkDir(zr, ".", func(p string, d fs.DirEntry, err error) error {
-			if err != nil || d.IsDir() {
-				return err
-			}
-			if !isPermittedFile(p) {
-				return nil
-			}
-			fileBuf, err := fs.ReadFile(zr, p)
-			if err != nil {
-				return err
-			}
-			archive.Files = append(archive.Files, txtar.File{
-				Name: path.Clean(p),
-				Data: fileBuf,
-			})
-			return nil
-		})
+		dir, err := newMemoryDirectoryFromFS(zr)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
@@ -150,7 +151,7 @@ func handlePOSTInstall(goVersion string, examples []Example) http.HandlerFunc {
 			GoVersion:       goVersion,
 			Examples:        slices.Clone(examples),
 			Name:            "Upload",
-			Archive:         &archive,
+			Dir:             dir,
 		}
 
 		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {

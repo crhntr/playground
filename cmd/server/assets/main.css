@@ -200,3 +200,27 @@ summary span {
 #new-file-form button:hover {
 	background: var(--aqua);
 }
+
+textarea.txtar {
+	min-height: 30rem;
+}
+
+#actions {
+	margin: 1rem 0;
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+#actions button {
+	padding: 0.5rem 1rem;
+	background: var(--gopher-blue);
+	color: white;
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+#actions button:hover {
+	background: var(--aqua);
+}

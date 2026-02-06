@@ -56,12 +56,12 @@ func (dir *FilesystemDirectory) buildWASM(ctx context.Context, env []string, goE
 }
 
 func handleDownload(res http.ResponseWriter, req *http.Request) {
-	archive, err := newRequestArchive(req)
+	dir, err := readMemoryDirectory(req)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
-	archive.ServeHTTP(res, req)
+	dir.ServeHTTP(res, req)
 }
 
 func handleRun(goExecPath string) http.HandlerFunc {

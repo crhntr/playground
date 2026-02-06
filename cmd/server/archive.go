@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"go/parser"
 	"go/token"
+	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"slices"
 	"strconv"
@@ -22,17 +22,31 @@ import (
 )
 
 type MemoryDirectory struct {
-	Archive *txtar.Archive
+	Archive   *txtar.Archive
+	MultiFile bool
 }
 
-func newRequestArchive(req *http.Request) (MemoryDirectory, error) {
+func readMemoryDirectory(req *http.Request) (MemoryDirectory, error) {
 	_ = req.ParseMultipartForm(maxBodyBytes)
 	defer closeAndIgnoreError(req.Body)
-	return readArchive(req.Form)
-}
 
-func readArchive(form url.Values) (MemoryDirectory, error) {
-	filenames := form["filename"]
+	toggleView := req.Header.Get("hx-trigger") == "toggle-view"
+
+	if content := req.Form.Get("txtar-content"); content != "" {
+		archive := txtar.Parse([]byte(content))
+		for _, file := range archive.Files {
+			if !isPermittedFile(file.Name) {
+				return MemoryDirectory{}, fmt.Errorf("file not permitted: %s", file.Name)
+			}
+		}
+		multiFile := false
+		if toggleView {
+			multiFile = true
+		}
+		return MemoryDirectory{Archive: archive, MultiFile: multiFile}, nil
+	}
+
+	filenames := req.Form["filename"]
 	archive := &txtar.Archive{Files: make([]txtar.File, 0, len(filenames))}
 	for _, filename := range filenames {
 		if !isPermittedFile(filename) {
@@ -40,11 +54,43 @@ func readArchive(form url.Values) (MemoryDirectory, error) {
 		}
 		archive.Files = append(archive.Files, txtar.File{
 			Name: filename,
-			Data: []byte(form.Get(filename)),
+			Data: []byte(req.Form.Get(filename)),
 		})
 	}
-	return MemoryDirectory{Archive: archive}, nil
+
+	multiFile := true
+	if toggleView {
+		multiFile = false
+	}
+	return MemoryDirectory{Archive: archive, MultiFile: multiFile}, nil
 }
+
+func newMemoryDirectoryFromFS(r fs.FS) (MemoryDirectory, error) {
+	dir := MemoryDirectory{
+		Archive:   new(txtar.Archive),
+		MultiFile: true,
+	}
+	err := fs.WalkDir(r, ".", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		if !isPermittedFile(p) {
+			return nil
+		}
+		fileBuf, err := fs.ReadFile(r, p)
+		if err != nil {
+			return err
+		}
+		dir.Archive.Files = append(dir.Archive.Files, txtar.File{
+			Name: path.Clean(p),
+			Data: fileBuf,
+		})
+		return nil
+	})
+	return dir, err
+}
+
+func (dir MemoryDirectory) Txtar() string { return string(txtar.Format(dir.Archive)) }
 
 func (dir *MemoryDirectory) fmt() error {
 	return txtarfmt.Archive(dir.Archive, txtarfmt.Configuration{})

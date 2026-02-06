@@ -82,29 +82,31 @@
 </header>
 
 <main>
-    {{block "editor" . -}}
-		<form id="editor" hx-indicator="#run" method="POST" action="/download">
-      {{range .Archive.Files}}
-		    {{- template "file-view" .}}
-      {{end}}
-			<div id="new-file-form">
+    {{block "editor" .Dir -}}
+		<form id="editor" hx-indicator="#run" method="POST">
+      {{if .MultiFile}}
+		      {{- range .Archive.Files}}
+				      {{- template "file-view" .}}
+		      {{- end}}
+	    {{- else}}
+		      {{- template "editor-txtar" .}}
+      {{- end}}
+
+			<div id="actions" hx-indicator="#run">
+        {{if .MultiFile -}}
+					<button type="submit" id="toggle-view" hx-boost='true' hx-post="/" hx-select="#editor" hx-swap="outerHTML" hx-target="#editor">Txtar Editor</button>
+				{{else -}}
+					<button type="submit" id="toggle-view" hx-boost='true' hx-post="/" hx-select="#editor" hx-swap="outerHTML" hx-target="#editor">File Editors</button>
+				{{end -}}
+				<button type="button" hx-boost='true' hx-post="/go/run" hx-target="#runner" hx-swap="innerHTML" hx-include="#editor">Run</button>
+				<button type="button" hx-boost='true' hx-post="/fmt" hx-target="#editor" hx-include="#editor">Format</button>
+				<button type="button" hx-boost='true' hx-post="/go/mod/tidy" hx-target="#editor" hx-include="#editor">Tidy Module</button>
+				<button type="submit" formaction="/download" hx-boost='false'>Download</button>
 				<input type="text" name="new-filename" placeholder="filename.go" aria-label="New file name">
-				<button type="button" hx-post="/file/new" hx-target="#editor" hx-include="#editor, [name='new-filename']">New File</button>
+				<button type="button" hx-boost='true' hx-post="/file/new" hx-target="#editor" hx-include="#editor, [name='new-filename']">New File</button>
 			</div>
 
 			<div id="run">
-				<div>
-					<button id="run-trigger" type="submit" hx-post="/go/run" hx-target="#runner" hx-swap="innerHTML">
-						Run
-					</button>
-					<button id="format" type="button" title='Format' hx-target='#editor' hx-post='/fmt'
-					        hx-include='#editor'>Format
-					</button>
-					<button id="go-mod-tidy" type="button" title='go mod tidy' hx-target='#editor'
-					        hx-post='/go/mod/tidy' hx-include='#editor'>Tidy Module
-					</button>
-					<button id="run-trigger" type="submit">Download</button>
-				</div>
 				<div id="runner"></div>
 				<p id="loading-message">Your app is being built.</p>
 			</div>
@@ -135,6 +137,18 @@
 	<input name="filename" value="{{.Name}}" type='hidden'>
 {{end}}
 
+{{define "editor-txtar" -}}
+	<textarea
+					id="txtar-content"
+					class="editor txtar"
+					name="txtar-content"
+					spellcheck="false"
+					autocomplete="off"
+					autocapitalize="off"
+					wrap="off"
+					aria-label="Txtar content"
+	>{{.Txtar}}</textarea>
+{{- end}}
 
 {{define "file-view" -}}
 <details open>

@@ -38,11 +38,11 @@ func newFilesystemDirectory(md MemoryDirectory) (FilesystemDirectory, error) {
 }
 
 func newRequestDirectory(req *http.Request) (FilesystemDirectory, error) {
-	archive, err := newRequestArchive(req)
+	dir, err := readMemoryDirectory(req)
 	if err != nil {
 		return FilesystemDirectory{}, err
 	}
-	return newFilesystemDirectory(archive)
+	return newFilesystemDirectory(dir)
 }
 
 func (dir *FilesystemDirectory) checkDependencies() error {
