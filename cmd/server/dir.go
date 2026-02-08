@@ -11,9 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/tools/txtar"
 )
@@ -101,7 +99,6 @@ func (dir *FilesystemDirectory) execGo(ctx context.Context, env []string, goExec
 	cmd.Stderr = io.MultiWriter(os.Stdout, &dir.Output)
 	cmd.Env = env
 	cmd.Dir = dir.TempDir
-	io.WriteString(&dir.Output, "$ "+strings.Join(append([]string{path.Base(cmd.Path)}, cmd.Args...), " "))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
