@@ -30,3 +30,8 @@ services:
     http_port: 8080
     instance_count: 1
     instance_size_slug: basic-xxs
+envs:
+  - key: GITHUB_TOKEN
+    scope: RUN_TIME
+    type: SECRET
+    value: EV[1:zuw5cSGOMY7yIRZaZt48ME+KpNliqgyS:TkItqTacGGeA2RB94uK45XEza/xRYNVpQyT/rxGK76stlUCmFxbrxShHrafCQIRj+uITSktk020fqbFG62jXFJRmeul/N23jRbRiwlgXjyZykT1b5O0X/e5M6kqx1dXpb9eyFRvqjVEszuPaCw==]

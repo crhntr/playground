@@ -60,6 +60,10 @@ func main() {
 	mux.Handle("POST /file/delete", handleDeleteFile())
 	mux.HandleFunc("POST /download", handleDownload)
 
+	ghClient := newGitHubClient()
+	gistLimiter := newGistRateLimiter()
+	mux.Handle("GET /gist.github.com/{owner}/{gistID}", handleGist(goVersion, examples, goExecPath, ghClient, gistLimiter))
+
 	mux.HandleFunc("GET /upload", handleGETInstall(goVersion))
 	mux.HandleFunc("POST /upload", handlePOSTInstall(goVersion, examples))
 
