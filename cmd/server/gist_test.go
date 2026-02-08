@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v80/github"
@@ -118,32 +119,10 @@ func Test_gistToMemoryDirectory_multiFile(t *testing.T) {
 		},
 	}
 
-	dir, err := gistToMemoryDirectory(gist, "go")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, f := range dir.Archive.Files {
-		if f.Name == ".env" {
-			t.Error(".env should be filtered out by isPermittedFile")
-		}
-	}
-
-	hasGoMod := false
-	hasMainGo := false
-	for _, f := range dir.Archive.Files {
-		switch f.Name {
-		case "go.mod":
-			hasGoMod = true
-		case "main.go":
-			hasMainGo = true
-		}
-	}
-	if !hasGoMod {
-		t.Error("expected go.mod file")
-	}
-	if !hasMainGo {
-		t.Error("expected main.go file")
+	if _, err := gistToMemoryDirectory(gist, "go"); err == nil {
+		t.Error(".env should cause an error", err)
+	} else if msg := err.Error(); !strings.Contains(msg, ".env") {
+		t.Errorf("should cause an error got %q", msg)
 	}
 }
 
