@@ -21,11 +21,11 @@ import (
 )
 
 func newGitHubClient() *github.Client {
-	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
+	ghToken := os.Getenv("GITHUB_TOKEN")
+	if ghToken == "" {
 		return github.NewClient(nil)
 	}
-	return github.NewClient(nil).WithAuthToken(token)
+	return github.NewClient(nil).WithAuthToken(ghToken)
 }
 
 func newGistRateLimiter() *rate.Limiter {
