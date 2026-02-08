@@ -35,7 +35,6 @@ type (
 )
 
 func (dir *FilesystemDirectory) buildWASM(ctx context.Context, env []string, goExecPath string) (string, error) {
-	var outputBuffer bytes.Buffer
 	const output = "main.wasm"
 	buildArgs := []string{
 		"build",
@@ -45,7 +44,7 @@ func (dir *FilesystemDirectory) buildWASM(ctx context.Context, env []string, goE
 	}
 	err := dir.execGo(ctx, env, goExecPath, buildArgs...)
 	if err != nil {
-		return "", errors.New(outputBuffer.String())
+		return "", errors.New(dir.Output.String())
 	}
 	wasmBuild, err := os.ReadFile(filepath.Join(dir.TempDir, output))
 	if err != nil {
