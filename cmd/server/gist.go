@@ -107,6 +107,7 @@ func gistToMemoryDirectory(gist *github.Gist, goExecPath string) (MemoryDirector
 			archive.Files = filtered
 			dir := MemoryDirectory{Archive: archive, MultiFile: true}
 			expandNestedTxtar(&dir)
+			dir.normalizeIDEState()
 			return dir, nil
 		}
 	}
@@ -133,6 +134,7 @@ func gistToMemoryDirectory(gist *github.Gist, goExecPath string) (MemoryDirector
 	}
 	dir := MemoryDirectory{Archive: archive, MultiFile: true}
 	expandNestedTxtar(&dir)
+	dir.normalizeIDEState()
 	return dir, nil
 }
 
@@ -147,6 +149,7 @@ func singleGoFileDirectory(filename string, content []byte, goExecPath string) (
 	}
 
 	dir := MemoryDirectory{Archive: archive, MultiFile: true}
+	dir.normalizeIDEState()
 	fsDir := FilesystemDirectory{MemoryDirectory: dir}
 	if err := fsDir.writeFiles(); err != nil {
 		return dir, nil

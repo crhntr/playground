@@ -22,8 +22,47 @@ import (
 )
 
 type MemoryDirectory struct {
-	Archive   *txtar.Archive
-	MultiFile bool
+	Archive    *txtar.Archive
+	MultiFile  bool
+	ActiveFile string
+	OpenFiles  []string
+}
+
+func (dir MemoryDirectory) OpenFilesString() string { return strings.Join(dir.OpenFiles, ",") }
+
+// normalizeIDEState fills in default ActiveFile / OpenFiles and filters out
+// any entries that don't refer to a file currently in the archive. It is a
+// no-op when the archive is empty.
+func (dir *MemoryDirectory) normalizeIDEState() {
+	if dir.Archive == nil || len(dir.Archive.Files) == 0 {
+		dir.ActiveFile = ""
+		dir.OpenFiles = nil
+		return
+	}
+	exists := func(name string) bool {
+		for _, f := range dir.Archive.Files {
+			if f.Name == name {
+				return true
+			}
+		}
+		return false
+	}
+	if !exists(dir.ActiveFile) {
+		dir.ActiveFile = dir.Archive.Files[0].Name
+	}
+	filtered := dir.OpenFiles[:0]
+	seen := map[string]bool{}
+	for _, name := range dir.OpenFiles {
+		if name == "" || seen[name] || !exists(name) {
+			continue
+		}
+		seen[name] = true
+		filtered = append(filtered, name)
+	}
+	dir.OpenFiles = filtered
+	if !seen[dir.ActiveFile] {
+		dir.OpenFiles = append(dir.OpenFiles, dir.ActiveFile)
+	}
 }
 
 func readMemoryDirectory(req *http.Request) (MemoryDirectory, error) {
@@ -31,6 +70,11 @@ func readMemoryDirectory(req *http.Request) (MemoryDirectory, error) {
 	defer closeAndIgnoreError(req.Body)
 
 	toggleView := req.Header.Get("hx-trigger") == "toggle-view"
+	activeFile := req.Form.Get("active-file")
+	var openFiles []string
+	if v := req.Form.Get("open-tabs"); v != "" {
+		openFiles = strings.Split(v, ",")
+	}
 
 	if content := req.Form.Get("txtar-content"); content != "" {
 		archive := txtar.Parse([]byte(content))
@@ -43,8 +87,9 @@ func readMemoryDirectory(req *http.Request) (MemoryDirectory, error) {
 		if toggleView {
 			multiFile = true
 		}
-		dir := MemoryDirectory{Archive: archive, MultiFile: multiFile}
+		dir := MemoryDirectory{Archive: archive, MultiFile: multiFile, ActiveFile: activeFile, OpenFiles: openFiles}
 		expandNestedTxtar(&dir)
+		dir.normalizeIDEState()
 		return dir, nil
 	}
 
@@ -64,8 +109,9 @@ func readMemoryDirectory(req *http.Request) (MemoryDirectory, error) {
 	if toggleView {
 		multiFile = false
 	}
-	dir := MemoryDirectory{Archive: archive, MultiFile: multiFile}
+	dir := MemoryDirectory{Archive: archive, MultiFile: multiFile, ActiveFile: activeFile, OpenFiles: openFiles}
 	expandNestedTxtar(&dir)
+	dir.normalizeIDEState()
 	return dir, nil
 }
 
@@ -93,6 +139,7 @@ func newMemoryDirectoryFromFS(r fs.FS) (MemoryDirectory, error) {
 	})
 	if err == nil {
 		expandNestedTxtar(&dir)
+		dir.normalizeIDEState()
 	}
 	return dir, err
 }

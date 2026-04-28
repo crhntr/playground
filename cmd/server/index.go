@@ -53,6 +53,8 @@ func handleIndexPage(goVersion string, examples []Example) http.HandlerFunc {
 					return
 				}
 				data.Dir.Archive = txtar.Parse(buf)
+				data.Dir.MultiFile = true
+				data.Dir.normalizeIDEState()
 			}
 		}
 		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {

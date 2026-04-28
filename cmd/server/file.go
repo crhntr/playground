@@ -11,7 +11,7 @@ import (
 
 func handleNewFile() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		archive, err := readMemoryDirectory(req)
+		dir, err := readMemoryDirectory(req)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
@@ -27,8 +27,7 @@ func handleNewFile() http.HandlerFunc {
 			return
 		}
 
-		// Check if file already exists
-		for _, f := range archive.Archive.Files {
+		for _, f := range dir.Archive.Files {
 			if f.Name == filename {
 				http.Error(res, "file already exists", http.StatusBadRequest)
 				return
@@ -40,20 +39,23 @@ func handleNewFile() http.HandlerFunc {
 			content = []byte("package main\n")
 		}
 
-		archive.Archive.Files = append(archive.Archive.Files, txtar.File{
+		dir.Archive.Files = append(dir.Archive.Files, txtar.File{
 			Name: filename,
 			Data: content,
 		})
+		dir.ActiveFile = filename
+		dir.OpenFiles = append(dir.OpenFiles, filename)
+		dir.normalizeIDEState()
 
 		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
-			return templates.ExecuteTemplate(w, "editor", archive)
+			return templates.ExecuteTemplate(w, "editor", dir)
 		})
 	}
 }
 
 func handleDeleteFile() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		archive, err := readMemoryDirectory(req)
+		dir, err := readMemoryDirectory(req)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
@@ -65,12 +67,17 @@ func handleDeleteFile() http.HandlerFunc {
 			return
 		}
 
-		archive.Archive.Files = slices.DeleteFunc(archive.Archive.Files, func(f txtar.File) bool {
+		dir.Archive.Files = slices.DeleteFunc(dir.Archive.Files, func(f txtar.File) bool {
 			return f.Name == filename
 		})
+		if dir.ActiveFile == filename {
+			dir.ActiveFile = ""
+		}
+		dir.OpenFiles = slices.DeleteFunc(dir.OpenFiles, func(s string) bool { return s == filename })
+		dir.normalizeIDEState()
 
 		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
-			return templates.ExecuteTemplate(w, "editor", archive)
+			return templates.ExecuteTemplate(w, "editor", dir)
 		})
 	}
 }

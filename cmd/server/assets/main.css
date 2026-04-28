@@ -9,6 +9,11 @@
 	--yellow: hsl(52, 100%, 50%);
 	--beeswax: hsl(52, 100%, 90%);
 
+	--ide-border: hsl(0, 0%, 80%);
+	--ide-bg: hsl(0, 0%, 98%);
+	--ide-row-hover: hsl(192, 60%, 95%);
+	--ide-row-active: var(--beeswax);
+
 	--gopher-gradient: linear-gradient(90deg, rgba(0,173,216,1) 80%, rgba(0,162,156,1) 100%)
 }
 
@@ -20,7 +25,7 @@ body, html, main {
 }
 
 body>header {
-	margin-bottom: 2rem;
+	margin-bottom: 1rem;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -44,14 +49,196 @@ main {
 	padding: 1rem;
 }
 
-#editor textarea#code {
-	border: .05rem solid dimgrey;
+/* IDE layout */
+.ide {
+	display: grid;
+	grid-template-columns: 16rem 1fr;
+	grid-template-rows: auto 1fr;
+	height: 70vh;
+	min-height: 24rem;
+	border: 1px solid var(--ide-border);
+	background: var(--ide-bg);
+	overflow: hidden;
+	border-radius: 4px;
+}
+
+.ide-tree {
+	grid-row: 1 / span 2;
+	grid-column: 1;
+	display: flex;
+	flex-direction: column;
+	border-right: 1px solid var(--ide-border);
+	background: var(--ide-bg);
+	min-height: 0;
+}
+
+.tree {
+	list-style: none;
+	margin: 0;
+	padding: 0.25rem 0;
+	flex: 1;
+	overflow-y: auto;
+	min-height: 0;
+}
+
+.tree-item {
+	display: flex;
+	align-items: center;
+	padding: 0 0.25rem;
+	border-left: 3px solid transparent;
+}
+
+.tree-item:hover {
+	background: var(--ide-row-hover);
+}
+
+.tree-item-active {
+	background: var(--ide-row-active);
+	border-left-color: var(--gopher-blue);
+}
+
+.tree-row {
+	flex: 1;
+	min-width: 0;
+	background: transparent;
+	border: none;
+	text-align: left;
+	padding: 0.3rem 0.5rem;
+	cursor: pointer;
+	font-family: monospace;
+	font-size: 0.9rem;
+	color: inherit;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tree-row:hover {
+	background: transparent;
+}
+
+.tree-delete {
+	opacity: 0;
+	background: transparent;
+	border: none;
+	color: var(--fuchsia);
+	cursor: pointer;
+	padding: 0 0.4rem;
+	font-size: 1rem;
+	line-height: 1;
+	border-radius: 3px;
+}
+
+.tree-item:hover .tree-delete,
+.tree-item:focus-within .tree-delete {
+	opacity: 1;
+}
+
+.tree-delete:hover {
+	background: var(--light-fuchsia);
+}
+
+.new-file {
+	display: flex;
+	gap: 0.25rem;
+	padding: 0.5rem;
+	border-top: 1px solid var(--ide-border);
+	background: var(--ide-bg);
+}
+
+.new-file input[type="text"] {
+	flex: 1;
+	min-width: 0;
+	padding: 0.3rem 0.4rem;
+	border: 1px solid var(--ide-border);
+	border-radius: 3px;
+	font-family: monospace;
+	font-size: 0.85rem;
+}
+
+.new-file button {
+	padding: 0.3rem 0.6rem;
+	background: var(--gopher-blue);
+	color: white;
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+	font-weight: bold;
+}
+
+.new-file button:hover {
+	background: var(--aqua);
+}
+
+.ide-tabs {
+	grid-row: 1;
+	grid-column: 2;
+	display: flex;
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	background: var(--ide-bg);
+	border-bottom: 1px solid var(--ide-border);
+	min-height: 2rem;
+}
+
+.tab {
+	display: inline-flex;
+	align-items: center;
+	border-right: 1px solid var(--ide-border);
+	background: transparent;
+}
+
+.tab-active {
+	background: var(--ide-row-active);
+	box-shadow: inset 0 -2px 0 var(--gopher-blue);
+}
+
+.tab-name {
+	background: transparent;
+	border: none;
+	padding: 0.4rem 0.6rem;
+	cursor: pointer;
+	font-family: monospace;
+	font-size: 0.85rem;
+	color: inherit;
+}
+
+.tab-close {
+	background: transparent;
+	border: none;
+	padding: 0 0.5rem;
+	cursor: pointer;
+	color: hsl(0, 0%, 50%);
+	font-size: 1rem;
+	line-height: 1;
+}
+
+.tab-close:hover {
+	color: var(--fuchsia);
+}
+
+.ide-editor {
+	grid-row: 2;
+	grid-column: 2;
+	background: var(--beeswax);
+	overflow: hidden;
+	min-height: 0;
+}
+
+.ide-editor .CodeMirror {
+	height: 100%;
+	font-family: monospace;
+	font-size: 0.9rem;
+}
+
+#editor textarea.txtar {
+	border: 1px solid var(--ide-border);
 	box-shadow: none;
-	width: calc(100% - 2 * .05rem);
+	width: 100%;
 	display: block;
 	box-sizing: border-box;
 	resize: vertical;
-	min-height: 20rem;
+	min-height: 30rem;
 	background: var(--beeswax);
 	padding: 1rem;
 
@@ -117,7 +304,7 @@ input[type=checkbox]:checked + label:after {
 	color: var(--fuchsia)
 }
 
-.htmx-request button {
+.htmx-request #actions button {
 	display: none;
 }
 
@@ -136,73 +323,6 @@ input[type=checkbox]:checked + label:after {
 }
 [for="hide-window"] {
 	font-weight: bolder;
-}
-
-details {
-	margin-bottom: 1rem;
-}
-
-details>header {
-	display: flex;
-	padding: 1rem;
-	justify-content: flex-end;
-}
-
-summary {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	cursor: pointer;
-}
-
-summary span {
-	flex: 1;
-}
-
-.delete-file {
-	font-size: 0.75rem;
-	padding: 0.2rem 0.5rem;
-	margin-left: 0.5rem;
-	background: var(--fuchsia);
-	color: white;
-	border: none;
-	border-radius: 3px;
-	cursor: pointer;
-}
-
-.delete-file:hover {
-	background: hsl(342, 61%, 40%);
-}
-
-#new-file-form {
-	margin: 1rem 0;
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
-
-#new-file-form input[type="text"] {
-	padding: 0.5rem;
-	border: 1px solid dimgrey;
-	border-radius: 3px;
-	font-family: monospace;
-}
-
-#new-file-form button {
-	padding: 0.5rem 1rem;
-	background: var(--gopher-blue);
-	color: white;
-	border: none;
-	border-radius: 3px;
-	cursor: pointer;
-}
-
-#new-file-form button:hover {
-	background: var(--aqua);
-}
-
-textarea.txtar {
-	min-height: 30rem;
 }
 
 #actions {

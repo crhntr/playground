@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -88,5 +89,178 @@ func TestGoCompilerRun(t *testing.T) {
 
 	if !strings.Contains(output, "¡Hola Mundo!") {
 		t.Errorf("expected output to contain '¡Hola Mundo!', got: %q", output)
+	}
+}
+
+// TestIDEFileTabs exercises the IDE-style editor: tree row activation,
+// tab open/close preserving file content, new file creation, tree-driven
+// delete, format round-trip preserving active state, and the txtar toggle.
+func TestIDEFileTabs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Minute)
+	defer cancel()
+
+	containerURL, ctr := startPlayground(ctx, t)
+	defer func() { _ = testcontainers.TerminateContainer(ctr) }()
+
+	chromeCtx, cancel := chromedp.NewContext(ctx)
+	defer cancel()
+
+	pageURL := containerURL + "/?example=html-template"
+
+	// always auto-accept hx-confirm dialogs
+	const overrideConfirm = `window.confirm = () => true; true`
+
+	var (
+		treeFiles  []string
+		openTabs   string
+		activeFile string
+		mounted    string
+		mainGoLine string
+	)
+
+	if err := chromedp.Run(chromeCtx,
+		chromedp.Navigate(pageURL),
+		chromedp.WaitVisible(`.ide`, chromedp.ByQuery),
+		chromedp.Poll(`!!document.querySelector('.CodeMirror')`, nil, chromedp.WithPollingTimeout(20*time.Second)),
+		chromedp.Evaluate(overrideConfirm, nil),
+		chromedp.Evaluate(`Array.from(document.querySelectorAll('.tree-item')).map(li => li.dataset.file)`, &treeFiles),
+		chromedp.Evaluate(`document.querySelector('input[name="active-file"]').value`, &activeFile),
+		chromedp.Evaluate(`document.querySelector('input[name="open-tabs"]').value`, &openTabs),
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	wantTree := []string{"body.gohtml", "go.mod", "main.go", "types.go"}
+	if !slices.Equal(treeFiles, wantTree) {
+		t.Fatalf("tree files: got %v, want %v", treeFiles, wantTree)
+	}
+	if activeFile != "body.gohtml" {
+		t.Fatalf("expected initial active file body.gohtml, got %q", activeFile)
+	}
+	if openTabs != "body.gohtml" {
+		t.Fatalf("expected initial open-tabs to be body.gohtml, got %q", openTabs)
+	}
+
+	// Activate main.go from the tree, edit it, switch away, switch back.
+	if err := chromedp.Run(chromeCtx,
+		chromedp.Evaluate(`openTab('main.go')`, nil),
+		chromedp.Poll(`document.getElementById('editor-mount')?.querySelector('textarea[data-file]')?.dataset.file === 'main.go'`, nil,
+			chromedp.WithPollingTimeout(5*time.Second)),
+		chromedp.Evaluate(`(() => { const m = document.getElementById('editor-mount')._cm; m.setValue('// EDITED main.go\n'); m.save(); return true })()`, nil),
+		chromedp.Evaluate(`openTab('go.mod')`, nil),
+		chromedp.Poll(`document.getElementById('editor-mount')?.querySelector('textarea[data-file]')?.dataset.file === 'go.mod'`, nil,
+			chromedp.WithPollingTimeout(5*time.Second)),
+		chromedp.Evaluate(`setActiveFile('main.go')`, nil),
+		chromedp.Poll(`document.getElementById('editor-mount')?.querySelector('textarea[data-file]')?.dataset.file === 'main.go'`, nil,
+			chromedp.WithPollingTimeout(5*time.Second)),
+		chromedp.Evaluate(`document.querySelector('textarea[data-file="main.go"]').value.split('\n')[0]`, &mainGoLine),
+	); err != nil {
+		t.Fatal(err)
+	}
+	if mainGoLine != "// EDITED main.go" {
+		t.Fatalf("edited content lost across tab switch: first line = %q", mainGoLine)
+	}
+
+	// Close the active tab; another open tab should become active and the file should remain in the tree.
+	if err := chromedp.Run(chromeCtx,
+		chromedp.Evaluate(`closeTab('main.go')`, nil),
+		chromedp.Poll(`document.querySelector('input[name="active-file"]').value !== 'main.go'`, nil,
+			chromedp.WithPollingTimeout(5*time.Second)),
+		chromedp.Evaluate(`document.querySelector('input[name="active-file"]').value`, &activeFile),
+		chromedp.Evaluate(`document.querySelector('input[name="open-tabs"]').value`, &openTabs),
+		chromedp.Evaluate(`Array.from(document.querySelectorAll('.tree-item')).map(li => li.dataset.file)`, &treeFiles),
+	); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(treeFiles, "main.go") {
+		t.Fatalf("main.go disappeared from tree after closing tab: %v", treeFiles)
+	}
+	if activeFile == "main.go" {
+		t.Fatal("active file did not change when closing the active tab")
+	}
+	if strings.Contains(","+openTabs+",", ",main.go,") {
+		t.Fatalf("main.go should be removed from open-tabs, got %q", openTabs)
+	}
+
+	// Create a new file via the New File input + button. The new file becomes active and gains a tab.
+	if err := chromedp.Run(chromeCtx,
+		chromedp.Focus(`input[name="new-filename"]`, chromedp.ByQuery),
+		chromedp.SendKeys(`input[name="new-filename"]`, "helper.go", chromedp.ByQuery),
+		chromedp.Click(`.new-file button`, chromedp.ByQuery),
+		chromedp.Poll(`document.querySelector('input[name="active-file"]').value === 'helper.go'`, nil,
+			chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Evaluate(`document.querySelector('input[name="active-file"]').value`, &activeFile),
+		chromedp.Evaluate(`document.querySelector('input[name="open-tabs"]').value`, &openTabs),
+		chromedp.Evaluate(`document.getElementById('editor-mount')?.querySelector('textarea[data-file]')?.dataset.file`, &mounted),
+	); err != nil {
+		t.Fatal(err)
+	}
+	if activeFile != "helper.go" {
+		t.Fatalf("active file should be helper.go after create, got %q", activeFile)
+	}
+	if !strings.Contains(","+openTabs+",", ",helper.go,") {
+		t.Fatalf("helper.go should be in open-tabs, got %q", openTabs)
+	}
+	if mounted != "helper.go" {
+		t.Fatalf("mounted textarea should be helper.go, got %q", mounted)
+	}
+
+	// Format round-trip preserves active file and open tabs.
+	openBefore := openTabs
+	activeBefore := activeFile
+	if err := chromedp.Run(chromeCtx,
+		chromedp.Click(`button[hx-post="/fmt"]`, chromedp.ByQuery),
+		chromedp.Poll(`document.querySelector('input[name="active-file"]').value === '`+activeBefore+`'
+			&& !!document.querySelector('.CodeMirror')`, nil,
+			chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Evaluate(`document.querySelector('input[name="open-tabs"]').value`, &openTabs),
+		chromedp.Evaluate(`document.querySelector('input[name="active-file"]').value`, &activeFile),
+	); err != nil {
+		t.Fatal(err)
+	}
+	if openTabs != openBefore || activeFile != activeBefore {
+		t.Fatalf("format altered IDE state: open %q→%q, active %q→%q", openBefore, openTabs, activeBefore, activeFile)
+	}
+
+	// Delete a file via the tree's delete button.
+	if err := chromedp.Run(chromeCtx,
+		chromedp.Evaluate(overrideConfirm, nil),
+		chromedp.Click(`.tree-item[data-file="types.go"] .tree-delete`, chromedp.ByQuery),
+		chromedp.Poll(`!document.querySelector('.tree-item[data-file="types.go"]')`, nil,
+			chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Evaluate(`Array.from(document.querySelectorAll('.tree-item')).map(li => li.dataset.file)`, &treeFiles),
+	); err != nil {
+		t.Fatal(err)
+	}
+	if slices.Contains(treeFiles, "types.go") {
+		t.Fatalf("types.go should be removed from tree, got %v", treeFiles)
+	}
+
+	// Toggle to txtar mode and back; IDE state should survive the round-trip.
+	var hasTxtar, hasIDE bool
+	if err := chromedp.Run(chromeCtx,
+		chromedp.Click(`#toggle-view`, chromedp.ByQuery),
+		chromedp.Poll(`!!document.querySelector('textarea.txtar')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Evaluate(`!!document.querySelector('textarea.txtar')`, &hasTxtar),
+		chromedp.Click(`#toggle-view`, chromedp.ByQuery),
+		chromedp.Poll(`!!document.querySelector('.ide')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Evaluate(`!!document.querySelector('.ide')`, &hasIDE),
+		chromedp.Evaluate(`document.querySelector('input[name="open-tabs"]').value`, &openTabs),
+		chromedp.Evaluate(`document.querySelector('input[name="active-file"]').value`, &activeFile),
+	); err != nil {
+		t.Fatal(err)
+	}
+	if !hasTxtar {
+		t.Fatal("txtar editor did not appear after first toggle")
+	}
+	if !hasIDE {
+		t.Fatal("IDE did not return after second toggle")
+	}
+	if openTabs != openBefore || activeFile != activeBefore {
+		t.Fatalf("toggle round-trip lost IDE state: open %q vs %q, active %q vs %q",
+			openTabs, openBefore, activeFile, activeBefore)
 	}
 }
