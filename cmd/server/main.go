@@ -58,6 +58,8 @@ func main() {
 	mux.Handle("POST /fmt", handleFmt())
 	mux.Handle("POST /file/new", handleNewFile())
 	mux.Handle("POST /file/delete", handleDeleteFile())
+	mux.Handle("POST /file/select", handleSelectFile())
+	mux.Handle("POST /file/close", handleCloseFile())
 	mux.HandleFunc("POST /download", handleDownload)
 
 	ghClient := newGitHubClient()

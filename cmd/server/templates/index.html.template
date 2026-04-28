@@ -26,190 +26,25 @@
         }
 
         function editorMode(fileName) {
-            if (fileName.endsWith(".go")) {
+            if (fileName && fileName.endsWith(".go")) {
                 return 'go'
             }
             return "null"
         }
 
-        function findIDE() {
-            return document.querySelector('.ide')
-        }
-
-        function activeFileInput() {
-            return document.querySelector('input[name="active-file"]')
-        }
-
-        function openTabsInput() {
-            return document.querySelector('input[name="open-tabs"]')
-        }
-
-        function getOpenTabs() {
-            const input = openTabsInput()
-            if (!input || !input.value) return []
-            return input.value.split(',').filter(Boolean)
-        }
-
-        function setOpenTabs(tabs) {
-            const input = openTabsInput()
-            if (input) input.value = tabs.join(',')
-        }
-
-        function poolTextarea(name) {
-            const pool = document.getElementById('textarea-pool')
-            if (!pool) return null
-            return pool.querySelector(`textarea[data-file="${CSS.escape(name)}"]`)
-        }
-
-        function destroyEditor() {
-            const mount = document.getElementById('editor-mount')
-            if (!mount) return
-            if (mount._cm) {
-                mount._cm.save()
-                mount._cm.toTextArea()
-                mount._cm = null
-            }
-            const ta = mount.querySelector('textarea[data-file]')
-            if (ta) {
-                const pool = document.getElementById('textarea-pool')
-                if (pool) pool.appendChild(ta)
-            }
-            mount._activeFile = null
-        }
-
-        function instantiateEditor(name) {
-            const mount = document.getElementById('editor-mount')
-            if (!mount) return
-            const ta = mount.querySelector('textarea[data-file]')
+        // mountEditor finds the single visible textarea (the active file's editor
+        // or the txtar textarea) and replaces it with a CodeMirror instance.
+        function mountEditor() {
+            document.querySelectorAll('.CodeMirror').forEach(el => el.remove())
+            const ta = document.querySelector('#editor-mount textarea[data-file]')
+                || document.querySelector('textarea.txtar')
             if (!ta) return
+            const name = ta.dataset.file || ta.getAttribute('name')
             const mirror = CodeMirror.fromTextArea(ta, {
                 lineNumbers: true,
                 mode: editorMode(name),
             })
-            mirror.on("change", function () { mirror.save() })
-            mount._cm = mirror
-            mount._activeFile = name
-        }
-
-        function setActiveFile(name) {
-            const mount = document.getElementById('editor-mount')
-            if (!mount) return
-            if (mount._activeFile === name && mount._cm) {
-                highlightActive(name)
-                return
-            }
-            destroyEditor()
-            const ta = poolTextarea(name)
-            if (!ta) return
-            mount.appendChild(ta)
-            instantiateEditor(name)
-            const ai = activeFileInput()
-            if (ai) ai.value = name
-            highlightActive(name)
-        }
-
-        function highlightActive(name) {
-            document.querySelectorAll('.tree-item').forEach(li => {
-                li.classList.toggle('tree-item-active', li.dataset.file === name)
-            })
-            document.querySelectorAll('.tab').forEach(t => {
-                t.classList.toggle('tab-active', t.dataset.file === name)
-            })
-        }
-
-        function appendTab(name) {
-            const bar = document.getElementById('ide-tabs')
-            if (!bar) return
-            if (bar.querySelector(`.tab[data-file="${CSS.escape(name)}"]`)) return
-            const span = document.createElement('span')
-            span.className = 'tab'
-            span.dataset.file = name
-            const nameBtn = document.createElement('button')
-            nameBtn.type = 'button'
-            nameBtn.className = 'tab-name'
-            nameBtn.dataset.file = name
-            nameBtn.textContent = name
-            const closeBtn = document.createElement('button')
-            closeBtn.type = 'button'
-            closeBtn.className = 'tab-close'
-            closeBtn.dataset.file = name
-            closeBtn.setAttribute('aria-label', 'Close tab')
-            closeBtn.textContent = '×'
-            span.appendChild(nameBtn)
-            span.appendChild(closeBtn)
-            bar.appendChild(span)
-        }
-
-        function openTab(name) {
-            const tabs = getOpenTabs()
-            if (!tabs.includes(name)) {
-                tabs.push(name)
-                setOpenTabs(tabs)
-                appendTab(name)
-            }
-            setActiveFile(name)
-        }
-
-        function closeTab(name) {
-            const tabs = getOpenTabs().filter(t => t !== name)
-            setOpenTabs(tabs)
-            const tabEl = document.querySelector(`.tab[data-file="${CSS.escape(name)}"]`)
-            if (tabEl) tabEl.remove()
-            const mount = document.getElementById('editor-mount')
-            if (!mount) return
-            if (mount._activeFile !== name) return
-            const next = tabs[tabs.length - 1]
-            if (next) {
-                setActiveFile(next)
-                return
-            }
-            const firstTreeRow = document.querySelector('.tree-row')
-            if (firstTreeRow) openTab(firstTreeRow.dataset.file)
-        }
-
-        function onIDEClick(e) {
-            const close = e.target.closest('.tab-close')
-            if (close) {
-                e.preventDefault()
-                e.stopPropagation()
-                closeTab(close.dataset.file)
-                return
-            }
-            const tabName = e.target.closest('.tab-name')
-            if (tabName) {
-                e.preventDefault()
-                setActiveFile(tabName.dataset.file)
-                return
-            }
-            const treeRow = e.target.closest('.tree-row')
-            if (treeRow) {
-                e.preventDefault()
-                openTab(treeRow.dataset.file)
-            }
-        }
-
-        function load() {
-            document.querySelectorAll('.CodeMirror').forEach(function (el) {
-                el.remove()
-            })
-            const txtar = document.querySelector('textarea.txtar')
-            if (txtar) {
-                const mirror = CodeMirror.fromTextArea(txtar, {
-                    lineNumbers: true,
-                    mode: editorMode(txtar.getAttribute('name')),
-                })
-                mirror.on("change", function () { mirror.save() })
-                return
-            }
-            const ide = findIDE()
-            if (!ide) return
-            const active = ide.getAttribute('data-active-file')
-            if (!active) return
-            const ta = document.querySelector(`#editor-mount textarea[data-file="${CSS.escape(active)}"]`)
-            if (!ta) return
-            instantiateEditor(active)
-            highlightActive(active)
-            ide.addEventListener('click', onIDEClick)
+            mirror.on("change", () => mirror.save())
         }
 
         function main() {
@@ -225,8 +60,8 @@
                     exit.innerText = `exit with ${event.data.exitCode} after ${event.data.duration}ms`
                 }
             })
-            htmx.onLoad(load)
-            load()
+            htmx.onLoad(mountEditor)
+            mountEditor()
         }
 	</script>
 </head>
@@ -285,14 +120,16 @@
 </html>
 
 {{define "ide-view" -}}
-	<div class="ide" data-active-file="{{.ActiveFile}}">
+	<div class="ide">
 		<aside class="ide-tree" aria-label="Files">
 			<ol class="tree" role="tree">
 				{{- range .Archive.Files}}
 					<li class="tree-item{{if eq .Name $.ActiveFile}} tree-item-active{{end}}" data-file="{{.Name}}" role="treeitem">
-						<button type="button" class="tree-row" data-file="{{.Name}}">{{.Name}}</button>
+						<button type="button" class="tree-row" data-file="{{.Name}}"
+						        hx-post="/file/select" hx-target="#editor" hx-swap="outerHTML" hx-include="#editor"
+						        hx-vals='{"select-filename": "{{.Name}}"}'>{{.Name}}</button>
 						<button type="button" class="tree-delete" aria-label="Delete {{.Name}}"
-						        hx-post="/file/delete" hx-target="#editor" hx-include="#editor"
+						        hx-post="/file/delete" hx-target="#editor" hx-swap="outerHTML" hx-include="#editor"
 						        hx-vals='{"delete-filename": "{{.Name}}"}'
 						        hx-confirm="Delete &quot;{{.Name}}&quot;?">×</button>
 					</li>
@@ -301,26 +138,30 @@
 			<div class="new-file">
 				<input type="text" name="new-filename" placeholder="filename.go" aria-label="New file name">
 				<button type="button" aria-label="Add file"
-				        hx-post="/file/new" hx-target="#editor"
+				        hx-post="/file/new" hx-target="#editor" hx-swap="outerHTML"
 				        hx-include="#editor, [name='new-filename']">+</button>
 			</div>
 		</aside>
 		<nav class="ide-tabs" id="ide-tabs" aria-label="Open files">
 			{{- range .OpenFiles}}
 				<span class="tab{{if eq . $.ActiveFile}} tab-active{{end}}" data-file="{{.}}">
-					<button type="button" class="tab-name" data-file="{{.}}">{{.}}</button>
-					<button type="button" class="tab-close" aria-label="Close tab" data-file="{{.}}">×</button>
+					<button type="button" class="tab-name" data-file="{{.}}"
+					        hx-post="/file/select" hx-target="#editor" hx-swap="outerHTML" hx-include="#editor"
+					        hx-vals='{"select-filename": "{{.}}"}'>{{.}}</button>
+					<button type="button" class="tab-close" aria-label="Close tab"
+					        hx-post="/file/close" hx-target="#editor" hx-swap="outerHTML" hx-include="#editor"
+					        hx-vals='{"close-filename": "{{.}}"}'>×</button>
 				</span>
 			{{- end}}
 		</nav>
-		<section class="ide-editor" id="editor-mount" data-active-file="{{.ActiveFile}}">
+		<section class="ide-editor" id="editor-mount">
 			{{- range .Archive.Files}}
 				{{- if eq .Name $.ActiveFile -}}
 					{{template "editor-textarea" .}}
 				{{- end -}}
 			{{- end}}
 		</section>
-		<div class="ide-pool" id="textarea-pool" hidden aria-hidden="true">
+		<div class="ide-pool" hidden aria-hidden="true">
 			{{- range .Archive.Files}}
 				{{- if ne .Name $.ActiveFile -}}
 					{{template "editor-textarea" .}}

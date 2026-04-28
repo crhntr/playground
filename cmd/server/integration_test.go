@@ -145,18 +145,20 @@ func TestIDEFileTabs(t *testing.T) {
 	}
 
 	// Activate main.go from the tree, edit it, switch away, switch back.
+	// All clicks below trigger HTMX requests that re-render #editor; the
+	// poll waits for the new CodeMirror to mount on the expected file.
 	if err := chromedp.Run(chromeCtx,
-		chromedp.Evaluate(`openTab('main.go')`, nil),
-		chromedp.Poll(`document.getElementById('editor-mount')?.querySelector('textarea[data-file]')?.dataset.file === 'main.go'`, nil,
-			chromedp.WithPollingTimeout(5*time.Second)),
-		chromedp.Evaluate(`(() => { const m = document.getElementById('editor-mount')._cm; m.setValue('// EDITED main.go\n'); m.save(); return true })()`, nil),
-		chromedp.Evaluate(`openTab('go.mod')`, nil),
-		chromedp.Poll(`document.getElementById('editor-mount')?.querySelector('textarea[data-file]')?.dataset.file === 'go.mod'`, nil,
-			chromedp.WithPollingTimeout(5*time.Second)),
-		chromedp.Evaluate(`setActiveFile('main.go')`, nil),
-		chromedp.Poll(`document.getElementById('editor-mount')?.querySelector('textarea[data-file]')?.dataset.file === 'main.go'`, nil,
-			chromedp.WithPollingTimeout(5*time.Second)),
-		chromedp.Evaluate(`document.querySelector('textarea[data-file="main.go"]').value.split('\n')[0]`, &mainGoLine),
+		chromedp.Click(`.tree-row[data-file="main.go"]`, chromedp.ByQuery),
+		chromedp.Poll(`document.querySelector('input[name="active-file"]').value === 'main.go'
+			&& !!document.querySelector('.CodeMirror')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Evaluate(`(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.setValue('// EDITED main.go\n'); cm.save(); return true; })()`, nil),
+		chromedp.Click(`.tree-row[data-file="go.mod"]`, chromedp.ByQuery),
+		chromedp.Poll(`document.querySelector('input[name="active-file"]').value === 'go.mod'
+			&& !!document.querySelector('.CodeMirror')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Click(`.tab[data-file="main.go"] .tab-name`, chromedp.ByQuery),
+		chromedp.Poll(`document.querySelector('input[name="active-file"]').value === 'main.go'
+			&& !!document.querySelector('.CodeMirror')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Evaluate(`document.querySelector('#editor-mount textarea[data-file="main.go"]').value.split('\n')[0]`, &mainGoLine),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -166,9 +168,9 @@ func TestIDEFileTabs(t *testing.T) {
 
 	// Close the active tab; another open tab should become active and the file should remain in the tree.
 	if err := chromedp.Run(chromeCtx,
-		chromedp.Evaluate(`closeTab('main.go')`, nil),
-		chromedp.Poll(`document.querySelector('input[name="active-file"]').value !== 'main.go'`, nil,
-			chromedp.WithPollingTimeout(5*time.Second)),
+		chromedp.Click(`.tab[data-file="main.go"] .tab-close`, chromedp.ByQuery),
+		chromedp.Poll(`document.querySelector('input[name="active-file"]').value !== 'main.go'
+			&& !!document.querySelector('.CodeMirror')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
 		chromedp.Evaluate(`document.querySelector('input[name="active-file"]').value`, &activeFile),
 		chromedp.Evaluate(`document.querySelector('input[name="open-tabs"]').value`, &openTabs),
 		chromedp.Evaluate(`Array.from(document.querySelectorAll('.tree-item')).map(li => li.dataset.file)`, &treeFiles),

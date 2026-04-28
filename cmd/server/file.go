@@ -81,3 +81,60 @@ func handleDeleteFile() http.HandlerFunc {
 		})
 	}
 }
+
+func handleSelectFile() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		dir, err := readMemoryDirectory(req)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		filename := req.FormValue("select-filename")
+		if filename == "" {
+			http.Error(res, "filename required", http.StatusBadRequest)
+			return
+		}
+		exists := slices.ContainsFunc(dir.Archive.Files, func(f txtar.File) bool {
+			return f.Name == filename
+		})
+		if !exists {
+			http.Error(res, "file not found", http.StatusBadRequest)
+			return
+		}
+		dir.ActiveFile = filename
+		if !slices.Contains(dir.OpenFiles, filename) {
+			dir.OpenFiles = append(dir.OpenFiles, filename)
+		}
+		dir.normalizeIDEState()
+		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+			return templates.ExecuteTemplate(w, "editor", dir)
+		})
+	}
+}
+
+func handleCloseFile() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		dir, err := readMemoryDirectory(req)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		filename := req.FormValue("close-filename")
+		if filename == "" {
+			http.Error(res, "filename required", http.StatusBadRequest)
+			return
+		}
+		dir.OpenFiles = slices.DeleteFunc(dir.OpenFiles, func(s string) bool { return s == filename })
+		if dir.ActiveFile == filename {
+			if n := len(dir.OpenFiles); n > 0 {
+				dir.ActiveFile = dir.OpenFiles[n-1]
+			} else {
+				dir.ActiveFile = ""
+			}
+		}
+		dir.normalizeIDEState()
+		renderHTML(res, req, http.StatusOK, func(w io.Writer) error {
+			return templates.ExecuteTemplate(w, "editor", dir)
+		})
+	}
+}
