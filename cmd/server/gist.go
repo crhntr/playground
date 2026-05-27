@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v80/github"
+	"github.com/google/go-github/v88/github"
 	"golang.org/x/time/rate"
 	"golang.org/x/tools/txtar"
 )
