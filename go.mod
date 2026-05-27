@@ -4,12 +4,12 @@ go 1.26
 
 require (
 	github.com/chromedp/chromedp v0.15.1
-	github.com/crhntr/txtarfmt v0.4.3
+	github.com/crhntr/txtarfmt v0.4.4
 	github.com/google/go-github/v80 v80.0.0
 	github.com/testcontainers/testcontainers-go v0.42.0
-	golang.org/x/mod v0.35.0
+	golang.org/x/mod v0.36.0
 	golang.org/x/time v0.15.0
-	golang.org/x/tools v0.44.0
+	golang.org/x/tools v0.45.0
 )
 
 require (
@@ -70,6 +70,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
