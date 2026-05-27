@@ -62,7 +62,10 @@ func main() {
 	mux.Handle("POST /file/close", handleCloseFile())
 	mux.HandleFunc("POST /download", handleDownload)
 
-	ghClient := newGitHubClient()
+	ghClient, err := newGitHubClient()
+	if err != nil {
+		log.Fatal(err)
+	}
 	gistLimiter := newGistRateLimiter()
 	mux.Handle("GET /gist.github.com/{owner}/{gistID}", handleGist(goVersion, examples, goExecPath, ghClient, gistLimiter))
 

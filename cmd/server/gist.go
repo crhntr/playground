@@ -20,12 +20,12 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-func newGitHubClient() *github.Client {
-	ghToken := os.Getenv("GITHUB_TOKEN")
-	if ghToken == "" {
-		return github.NewClient(nil)
+func newGitHubClient() (*github.Client, error) {
+	var opts []github.ClientOptionsFunc
+	if value, isSet := os.LookupEnv("GITHUB_TOKEN"); isSet {
+		opts = append(opts, github.WithAuthToken(value))
 	}
-	return github.NewClient(nil).WithAuthToken(ghToken)
+	return github.NewClient(opts...)
 }
 
 func newGistRateLimiter() *rate.Limiter {
