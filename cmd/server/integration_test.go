@@ -145,8 +145,6 @@ func TestIDEFileTabs(t *testing.T) {
 	}
 
 	// Activate main.go from the tree, edit it, switch away, switch back.
-	// All clicks below trigger HTMX requests that re-render #editor; the
-	// poll waits for the new CodeMirror to mount on the expected file.
 	if err := chromedp.Run(chromeCtx,
 		chromedp.Click(`.tree-row[data-file="main.go"]`, chromedp.ByQuery),
 		chromedp.Poll(`document.querySelector('input[name="active-file"]').value === 'main.go'
@@ -192,7 +190,8 @@ func TestIDEFileTabs(t *testing.T) {
 		chromedp.Focus(`input[name="new-filename"]`, chromedp.ByQuery),
 		chromedp.SendKeys(`input[name="new-filename"]`, "helper.go", chromedp.ByQuery),
 		chromedp.Click(`.new-file button`, chromedp.ByQuery),
-		chromedp.Poll(`document.querySelector('input[name="active-file"]').value === 'helper.go'`, nil,
+		chromedp.Poll(`document.querySelector('input[name="active-file"]').value === 'helper.go'
+			&& !!document.querySelector('.CodeMirror')`, nil,
 			chromedp.WithPollingTimeout(10*time.Second)),
 		chromedp.Evaluate(`document.querySelector('input[name="active-file"]').value`, &activeFile),
 		chromedp.Evaluate(`document.querySelector('input[name="open-tabs"]').value`, &openTabs),
@@ -210,12 +209,13 @@ func TestIDEFileTabs(t *testing.T) {
 		t.Fatalf("mounted textarea should be helper.go, got %q", mounted)
 	}
 
-	// Format round-trip preserves active file and open tabs.
 	openBefore := openTabs
 	activeBefore := activeFile
 	if err := chromedp.Run(chromeCtx,
+		chromedp.Evaluate(`document.getElementById('editor').setAttribute('data-pre-fmt', '1'); true`, nil),
 		chromedp.Click(`button[hx-post="/fmt"]`, chromedp.ByQuery),
-		chromedp.Poll(`document.querySelector('input[name="active-file"]').value === '`+activeBefore+`'
+		chromedp.Poll(`!document.getElementById('editor').hasAttribute('data-pre-fmt')
+			&& document.querySelector('input[name="active-file"]').value === '`+activeBefore+`'
 			&& !!document.querySelector('.CodeMirror')`, nil,
 			chromedp.WithPollingTimeout(10*time.Second)),
 		chromedp.Evaluate(`document.querySelector('input[name="open-tabs"]').value`, &openTabs),
@@ -231,7 +231,8 @@ func TestIDEFileTabs(t *testing.T) {
 	if err := chromedp.Run(chromeCtx,
 		chromedp.Evaluate(overrideConfirm, nil),
 		chromedp.Click(`.tree-item[data-file="types.go"] .tree-delete`, chromedp.ByQuery),
-		chromedp.Poll(`!document.querySelector('.tree-item[data-file="types.go"]')`, nil,
+		chromedp.Poll(`!document.querySelector('.tree-item[data-file="types.go"]')
+			&& !!document.querySelector('.CodeMirror')`, nil,
 			chromedp.WithPollingTimeout(10*time.Second)),
 		chromedp.Evaluate(`Array.from(document.querySelectorAll('.tree-item')).map(li => li.dataset.file)`, &treeFiles),
 	); err != nil {
@@ -245,10 +246,12 @@ func TestIDEFileTabs(t *testing.T) {
 	var hasTxtar, hasIDE bool
 	if err := chromedp.Run(chromeCtx,
 		chromedp.Click(`#toggle-view`, chromedp.ByQuery),
-		chromedp.Poll(`!!document.querySelector('textarea.txtar')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Poll(`!!document.querySelector('textarea.txtar')
+			&& !!document.querySelector('.CodeMirror')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
 		chromedp.Evaluate(`!!document.querySelector('textarea.txtar')`, &hasTxtar),
 		chromedp.Click(`#toggle-view`, chromedp.ByQuery),
-		chromedp.Poll(`!!document.querySelector('.ide')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
+		chromedp.Poll(`!!document.querySelector('.ide')
+			&& !!document.querySelector('.CodeMirror')`, nil, chromedp.WithPollingTimeout(10*time.Second)),
 		chromedp.Evaluate(`!!document.querySelector('.ide')`, &hasIDE),
 		chromedp.Evaluate(`document.querySelector('input[name="open-tabs"]').value`, &openTabs),
 		chromedp.Evaluate(`document.querySelector('input[name="active-file"]').value`, &activeFile),
