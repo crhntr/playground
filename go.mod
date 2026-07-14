@@ -7,9 +7,9 @@ require (
 	github.com/crhntr/txtarfmt v0.4.4
 	github.com/google/go-github/v88 v88.0.0
 	github.com/testcontainers/testcontainers-go v0.42.0
-	golang.org/x/mod v0.36.0
+	golang.org/x/mod v0.38.0
 	golang.org/x/time v0.15.0
-	golang.org/x/tools v0.45.0
+	golang.org/x/tools v0.47.0
 )
 
 require (
@@ -70,6 +70,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
