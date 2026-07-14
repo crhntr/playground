@@ -109,6 +109,12 @@ func readMemoryDirectory(req *http.Request) (MemoryDirectory, error) {
 	if toggleView {
 		multiFile = false
 	}
+
+	slices.SortFunc(archive.Files, func(a, b txtar.File) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	slices.Sort(openFiles)
+
 	dir := MemoryDirectory{Archive: archive, MultiFile: multiFile, ActiveFile: activeFile, OpenFiles: openFiles}
 	expandNestedTxtar(&dir)
 	dir.normalizeIDEState()
