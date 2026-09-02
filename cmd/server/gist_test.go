@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v90/github"
 	"golang.org/x/tools/txtar"
 )
 
