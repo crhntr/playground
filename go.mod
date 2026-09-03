@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/chromedp/chromedp v0.16.0
-	github.com/crhntr/txtarfmt v0.4.4
+	github.com/crhntr/txtarfmt v0.4.5
 	github.com/google/go-github/v90 v90.0.0
 	github.com/testcontainers/testcontainers-go v0.44.0
 	golang.org/x/mod v0.40.0
