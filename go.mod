@@ -1,6 +1,6 @@
 module github.com/crhntr/playground
 
-go 1.26
+go 1.26.0
 
 require (
 	github.com/chromedp/chromedp v0.16.0
@@ -8,7 +8,7 @@ require (
 	github.com/google/go-github/v90 v90.0.0
 	github.com/testcontainers/testcontainers-go v0.44.0
 	golang.org/x/mod v0.40.0
-	golang.org/x/time v0.15.0
+	golang.org/x/time v0.16.0
 	golang.org/x/tools v0.49.0
 )
 
