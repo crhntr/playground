@@ -7,7 +7,7 @@ require (
 	github.com/crhntr/txtarfmt v0.4.5
 	github.com/google/go-github/v91 v91.0.0
 	github.com/testcontainers/testcontainers-go v0.44.0
-	golang.org/x/mod v0.40.0
+	golang.org/x/mod v0.41.0
 	golang.org/x/time v0.16.0
 	golang.org/x/tools v0.49.0
 )
