@@ -60,6 +60,17 @@
                     exit.innerText = `exit with ${event.data.exitCode} after ${event.data.duration}ms`
                 }
             })
+            // htmx does not swap 4xx/5xx responses, so without this a rejected
+            // request (import not permitted, format error, ...) shows nothing.
+            document.body.addEventListener('htmx:responseError', function (event) {
+                const xhr = event.detail.xhr
+                const pre = document.createElement('pre')
+                pre.textContent = xhr.responseText || `request failed with status ${xhr.status}`
+                const run = document.createElement('div')
+                run.className = 'run'
+                run.append(pre)
+                document.getElementById('runner').replaceChildren(run)
+            })
             htmx.onLoad(mountEditor)
             mountEditor()
         }
