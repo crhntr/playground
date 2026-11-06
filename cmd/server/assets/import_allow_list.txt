@@ -6,6 +6,7 @@ cmp
 compress/gzip
 context
 embed
+encoding/json
 errors
 fmt
 go/ast

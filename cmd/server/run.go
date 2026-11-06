@@ -38,6 +38,10 @@ func (dir *FilesystemDirectory) buildWASM(ctx context.Context, env []string, goE
 	const output = "main.wasm"
 	buildArgs := []string{
 		"build",
+		// Archives usually have no go.sum (examples omit it and "Tidy Module"
+		// only writes back files already in the archive), so let the go command
+		// resolve the missing entries instead of failing the build.
+		"-mod=mod",
 		"-o", output,
 		fmt.Sprintf("-gcflags=-trimpath=%s", dir.TempDir),
 		fmt.Sprintf("-asmflags=-trimpath=%s", dir.TempDir),
